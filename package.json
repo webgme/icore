@@ -1,5 +1,11 @@
 {
-  "name": "icore",
+  "name": "webgme-icore",
+  "author": {
+    "name": "WebGME Development Team",
+    "url": "https://webgme.org"
+  },
+  "description": "Integrated code-editor for interacting with webgme models from the UI.",
+  "license": "MIT",
   "scripts": {
     "start": "node app.js",
     "test": "node ./node_modules/mocha/bin/mocha --recursive test",
@@ -13,7 +19,11 @@
     "users": "node ./node_modules/webgme/src/bin/usermanager.js",
     "clean_up": "node ./node_modules/webgme/src/bin/clean_up.js"
   },
-  "version": "1.0.0",
+  "version": "0.1.0-beta1",
+    "repository": {
+    "type": "git",
+    "url": "https://github.com/webgme/icore.git"
+  },
   "peerDependencies": {
     "webgme": "^2.0.0"
   },
