@@ -25,7 +25,7 @@ Make sure the [dependencies for webgme](https://github.com/webgme/webgme/blob/ma
  
  ## Publish new release at npm
  ```
- npm version 1.1.0 -m "Release %s"
+ npm version 1.0.0 -m "Release %s"
  git push origin master
  git checkout v1.0.0
  git push origin v1.0.0
