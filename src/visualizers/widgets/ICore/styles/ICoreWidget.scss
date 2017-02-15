@@ -2,6 +2,73 @@
  * This file is for any scss that you may want for this visualizer.
  */
 
-.i-core {
+.i-core-widget {
   outline: none;
+  padding: 2px;
+  //padding-top: 0;
+  //padding-right: 0;
+  //padding-bottom: 10px;
+  //padding-left: 0;
+
+  &.vertical-orientation {
+    display: inline-flex;
+    .code-editor {
+      height: 100%;
+      width: 50%;
+    }
+    .console-window {
+      height: 100%;
+      width: 50%;
+    }
+  }
+  &.horizontal-orientation {
+    display: block;
+    .code-editor {
+      height: 50%;
+      width: 100%;
+    }
+    .console-window {
+      height: 50%;
+      width: 100%;
+    }
+  }
+
+  .code-editor {
+    &.CodeMirror-focused {
+      border-color: #cccccc;
+      box-shadow: none;
+    }
+  }
+
+  .console-window {
+    &.CodeMirror-focused {
+      border-color: #cccccc;
+      box-shadow: none;
+    }
+  }
+
+  &.no-console-window {
+    .code-editor {
+      height: 100%;
+      width: 100%;
+    }
+    .console-window {
+      display: none;
+    }
+  }
+
+  .console-window {
+    span.cm-debug {
+      color: #0b93d5;
+    }
+    span.cm-info {
+      color: #23b729;
+    }
+    span.cm-warn {
+      color: #ece706;
+    }
+    span.cm-error-log {
+      color: #b51313;
+    }
+  }
 }

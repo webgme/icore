@@ -1,10 +1,43 @@
 /**
- * This file is for any css that you may want for this visualizer.
- *
- * Ideally, you would use the scss file also provided in this directory 
- * and then generate this file automatically from that. However, you can 
- * simply write css if you prefer
+ * This file is for any scss that you may want for this visualizer.
  */
+.i-core-widget {
+  outline: none;
+  padding: 2px; }
+  .i-core-widget.vertical-orientation {
+    display: inline-flex; }
+    .i-core-widget.vertical-orientation .code-editor {
+      height: 100%;
+      width: 50%; }
+    .i-core-widget.vertical-orientation .console-window {
+      height: 100%;
+      width: 50%; }
+  .i-core-widget.horizontal-orientation {
+    display: block; }
+    .i-core-widget.horizontal-orientation .code-editor {
+      height: 50%;
+      width: 100%; }
+    .i-core-widget.horizontal-orientation .console-window {
+      height: 50%;
+      width: 100%; }
+  .i-core-widget .code-editor.CodeMirror-focused {
+    border-color: #cccccc;
+    box-shadow: none; }
+  .i-core-widget .console-window.CodeMirror-focused {
+    border-color: #cccccc;
+    box-shadow: none; }
+  .i-core-widget.no-console-window .code-editor {
+    height: 100%;
+    width: 100%; }
+  .i-core-widget.no-console-window .console-window {
+    display: none; }
+  .i-core-widget .console-window span.cm-debug {
+    color: #0b93d5; }
+  .i-core-widget .console-window span.cm-info {
+    color: #23b729; }
+  .i-core-widget .console-window span.cm-warn {
+    color: #ece706; }
+  .i-core-widget .console-window span.cm-error-log {
+    color: #b51313; }
 
-.i-core {
-  outline: none; }
+/*# sourceMappingURL=ICoreWidget.css.map */

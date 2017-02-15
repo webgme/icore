@@ -1,0 +1,37 @@
+{
+  "templates": {
+    "coreTraverse": {
+      "displayName": "Traverse Model",
+      "description": "Illustrates how to use core.traverse to visit each node in a sub-tree.",
+      "script": "function (callback) {\n \tvar activeNode = this.activeNode,\n      core = this.core,\n      logger = this.logger;\n\n  function atNode(node, done) {\n    try {\n      var metaNode = core.getBaseType(node),\n          name = core.getAttribute(activeNode, 'name'),\n          path = core.getPath(node),\n          metaType;\n\n      if (metaNode) {\n        metaType = core.getAttribute(metaNode, 'name');\n      } else {\n        // The root-node does not have a meta node.\n        metaType = 'undefined';\n      }\n\n      logger.info('[', path, '] - ', name, 'is of type', metaType); \n\t\t\tdone();\n    } catch (err) {\n      done(err);\n    }\n  }\n\n  core.traverse(activeNode, null, atNode, callback);\n}",
+      "default": false
+    },
+    "blobClient": {
+      "displayName": "BlobClient - store and return files",
+      "description": "Illustrates how to use the blob-client and link to the artifacts in the result.",
+      "script": "function (callback) {\n \tvar self = this,\n  \t\tactiveNode = this.activeNode,\n      core = this.core,\n      logger = this.logger,\n      blobClient = this.blobClient,\n      artifact;\n  \n  artifact = self.blobClient.createArtifact('MyArtifact');\n  \n  artifact.addFiles({\n    \t'hello.txt': 'Hello world!',\n    \t'dir/hello2.txt': 'Hello from folder!'\n  \t})\n  \t.then(function (fileMetadataHashes) {\n    \t// We can link to each individual file\n    \tself.logger.info('Added files to blob-storage', fileMetadataHashes);\n    \tself.result.addArtifact(fileMetadataHashes[0]);\n    \tself.result.addArtifact(fileMetadataHashes[1]);\n    \t// and/or save the full artifact and link to it (will be a zip file).\n    \treturn artifact.save();\n  \t})\n    .then(function (artifactHash) {\n    \tself.result.addArtifact(artifactHash);\n    \tself.logger.info('Added complex artifact to blob-storage', artifactHash);\n    \tself.result.setSuccess(true);\n    \t// A plugin should always return with a result, in iCore it's optional and\n    \t// used only to display the plugin result dialog.\n    \tcallback(null, self.result);\n  \t})\n  \t.catch(function (err) {\n    \tcallback(err);\n  \t});\n}",
+      "default": false
+    },
+    "activeNode": {
+      "displayName": "Minimal",
+      "description": "Minimal example logging the name of the active node.",
+      "script": "function (callback) {\n \tvar activeNode = this.activeNode,\n      core = this.core,\n      logger = this.logger;\n  \n  logger.debug('path:', core.getPath(activeNode));\n  logger.info('name:', core.getAttribute(activeNode, 'name'));\n  logger.warn('pos :', core.getRegistry(activeNode, 'position'));\n  logger.error('guid:', core.getGuid(activeNode));\n  callback();\n}",
+      "default": true
+    },
+    "meta": {
+      "displayName": "Meta nodes",
+      "description": "Example showing how to get info about the meta-model.",
+      "script": "function (callback) {\n \tvar activeNode = this.activeNode,\n      core = this.core,\n      logger = this.logger,\n      msg,\n      path2MetaNode,\n      metaNode,\n      baseNode,\n      metaName,\n      metaJson;\n  \n  // The 'plugin' is initialized with a map from name to the meta-node in this.META\n  // from the core we can get a map from unique paths to the meta-node.\n  path2MetaNode = core.getAllMetaNodes(activeNode);\n\n  for (metaName in this.META) {\n    logger.info('====== ', metaName, ' ======');\n    metaNode = this.META[metaName];\n    logger.info('name', core.getAttribute(metaNode, 'name'));\n    logger.info('path', core.getPath(metaNode));\n    baseNode = core.getBase(metaNode);\n\n    if (baseNode) {\n\t\t\tlogger.info('base', core.getAttribute(baseNode, 'name'), '[', core.getPath(baseNode), ']');\n    } else {\n      logger.info('base None');\n    }\n\n    logger.debug('Defines meta definitions :', JSON.stringify(core.getOwnJsonMeta(metaNode), null, 2));\n    metaJson = core.getJsonMeta(metaNode);\n    logger.debug('Resolved meta definitions:', JSON.stringify(metaJson, null, 2));\n\n    if (metaJson.children.items.length > 0) {\n    \tmsg = 'Can contain (and their derived types): ';\n      metaJson.children.items.forEach(function (childPath) {\n        var childType = path2MetaNode[childPath];\n        // We check in case the meta is inconsisent.\n        if (childType) {\n          msg += '\"' + core.getAttribute(childType, 'name') + '\" ';\n        } else {\n          msg += '[' + childPath + '] ';\n        }\n      });\n      \n      logger.info(msg);\n    }\n\n    //TODO: Similar for pointers and sets, aspects and constraints..\n  }\n\n  callback();\n}",
+      "default": false
+    }
+  },
+  "consoleWindow": {
+    "verticalOrientation": true,
+    "logLevel": "debug"
+  },
+  "codeEditor": {
+    "autoSave": false,
+    "autoSaveInterval": 2000,
+    "scriptCodeAttribute": "scriptCode"
+  }
+}
