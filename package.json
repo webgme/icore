@@ -6,6 +6,12 @@
   },
   "description": "Integrated code-editor for interacting with webgme models from the UI.",
   "license": "MIT",
+  "keywords": [
+    "webgme",
+    "webgme-component",
+    "visualizer",
+    "code-editor"
+  ],
   "scripts": {
     "start": "node app.js",
     "test": "node ./node_modules/mocha/bin/mocha --recursive test",
