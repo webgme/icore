@@ -19,8 +19,8 @@
     "users": "node ./node_modules/webgme/src/bin/usermanager.js",
     "clean_up": "node ./node_modules/webgme/src/bin/clean_up.js"
   },
-  "version": "0.1.0-beta1",
-    "repository": {
+  "version": "0.1.0",
+  "repository": {
     "type": "git",
     "url": "https://github.com/webgme/icore.git"
   },
