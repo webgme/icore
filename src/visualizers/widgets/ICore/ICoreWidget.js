@@ -1,4 +1,4 @@
-/*globals define, WebGMEGlobal, $, _*/
+/*globals define, $*/
 /*jshint browser: true*/
 
 /**
@@ -55,9 +55,7 @@ define([
     //_.extend(ICoreWidget.prototype, ICoreKeyboard.prototype);
 
     ICoreWidget.prototype._initialize = function (config) {
-        var width = this._el.width(),
-            height = this._el.height(),
-            self = this,
+        var self = this,
             codeEditorOptions = {
                 value: '',
                 mode: 'javascript',
@@ -74,21 +72,21 @@ define([
                 theme: 'monokai'
             },
             extraKeys = {
-                'Ctrl-S': function (cm) {
+                'Ctrl-S': function () {
                     self.saveCode();
                 },
-                'Esc': function (cm) {
+                Esc: function () {
                     self.toggleConsole();
                 },
-                'Ctrl-Q': function (cm) {
+                'Ctrl-Q': function () {
                     self.executeCode();
                 },
-                'Tab': function betterTab(cm) {
+                Tab: function betterTab(cm) {
                     if (cm.somethingSelected()) {
-                        cm.indentSelection("add");
+                        cm.indentSelection('add');
                     } else {
-                        cm.replaceSelection(cm.getOption("indentWithTabs")? "\t":
-                            Array(cm.getOption("indentUnit") + 1).join(" "), "end", "+input");
+                        cm.replaceSelection(cm.getOption('indentWithTabs') ? '\t' :
+                            Array(cm.getOption('indentUnit') + 1).join(' '), 'end', '+input');
                     }
                 }
             };
@@ -99,7 +97,7 @@ define([
         this._codeEditor = codeMirror(this._el[0], codeEditorOptions);
         $(this._codeEditor.getWrapperElement()).addClass('code-editor');
 
-        this._codeEditor.on('change', function(cm, event) {
+        this._codeEditor.on('change', function (cm, event) {
             if (event.origin !== 'setValue') {
                 if (self._autoSave) {
                     clearTimeout(self._autoSaveTimerId);
@@ -129,7 +127,7 @@ define([
     ICoreWidget.prototype.addNode = function (desc) {
         if (typeof desc.scriptCode === 'string') {
             this._codeEditor.setValue(desc.scriptCode);
-        } else if (typeof this._defaultTemplateId === 'string'){
+        } else if (typeof this._defaultTemplateId === 'string') {
             this._codeEditor.setValue(this._templates[this._defaultTemplateId].script);
         } else {
             this._codeEditor.setValue('');
@@ -140,7 +138,7 @@ define([
         this._codeEditor.refresh();
     };
 
-    ICoreWidget.prototype.removeNode = function (gmeId) {
+    ICoreWidget.prototype.removeNode = function (/*gmeId*/) {
         this._codeEditor.setValue('// Node was removed');
         clearTimeout(this._autoSaveTimerId);
     };
