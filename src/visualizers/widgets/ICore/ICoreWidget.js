@@ -1,4 +1,4 @@
-/*globals define, $*/
+/*globals define, $, WebGMEGlobal*/
 /*jshint browser: true*/
 
 /**
@@ -7,12 +7,15 @@
 
 define([
     './ICoreKeyboard',
+    'common/core/core', // Core is used for completion..
     'codemirror/lib/codemirror',
     'codemirror/addon/hint/show-hint',
+    //'codemirror/addon/hint/javascript-hint',
     'jquery',
     './ICoreConsoleCodeMirrorMode',
-    'css!./styles/ICoreWidget.css'
-], function (ICoreKeyboard, codeMirror) {
+    'css!./styles/ICoreWidget.css',
+    'css!codemirror/addon/hint/show-hint.css'
+], function (ICoreKeyboard, Core, codeMirror) {
     'use strict';
 
     var ICoreWidget,
@@ -22,12 +25,17 @@ define([
             info: 1,
             warn: 2,
             error: 3
-        };
+        },
+        coreMethods;
 
 
     ICoreWidget = function (logger, container, config) {
         var templateId;
         this._logger = logger.fork('Widget');
+
+        if (!coreMethods) {
+            coreMethods = Object.keys((new Core({loadObject: function (){}, loadPaths: function () {}}, {globConf: WebGMEGlobal.gmeConfig, logger: logger})));
+        }
 
         this._el = container;
         this._logLevel = LOG_LEVELS[config.consoleWindow.logLevel] || 0;
@@ -88,6 +96,34 @@ define([
                         cm.replaceSelection(cm.getOption('indentWithTabs') ? '\t' :
                             Array(cm.getOption('indentUnit') + 1).join(' '), 'end', '+input');
                     }
+                },
+                'Ctrl-Space': function (cm) {
+                    cm.showHint({
+                        hint: function (cm) {
+                            var hints,
+                                cursor = cm.getCursor(),
+                                token = cm.getTokenAt(cursor);
+                            
+                            // TODO: For now it assume hint requested at '.'
+
+                            console.log(token);
+                            console.log(cursor);
+                            if (token.type === 'variable-2' && token.string === 'core') {
+                                hints = ['snopp', 'kuk'];
+                            } else if (token.string === '.') {
+                                token = cm.getTokenAt({line: cursor.line, ch: cursor.ch - 1});
+                                console.log('newT', token);
+                                if ((token.type === 'property' || token.type === 'variable-2') &&
+                                    token.string === 'core') {
+                                    hints = coreMethods;
+                                }
+                            } else if (token.type === 'property') {
+
+                            }
+
+                            return {from: cursor, to: cursor, list: hints || []};
+                        }
+                    });
                 }
             };
 
@@ -122,6 +158,10 @@ define([
 
         this.setOrientation(config.consoleWindow.verticalOrientation);
     };
+
+    ICoreWidget.prototype.getHintOptions = function () {
+
+    }
 
     // Adding/Removing/Updating items
     ICoreWidget.prototype.addNode = function (desc) {
