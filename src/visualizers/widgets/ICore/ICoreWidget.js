@@ -34,7 +34,15 @@ define([
         this._logger = logger.fork('Widget');
 
         if (!coreMethods) {
-            coreMethods = Object.keys((new Core({loadObject: function (){}, loadPaths: function () {}}, {globConf: WebGMEGlobal.gmeConfig, logger: logger})));
+            coreMethods = Object.keys((new Core({
+                // Project mock (we just need to get the method names)..
+                loadObject: function () {
+                },
+                loadPaths: function () {
+                }
+            }, {globConf: WebGMEGlobal.gmeConfig, logger: logger})));
+
+            coreMethods.sort();
         }
 
         this._el = container;
@@ -102,23 +110,24 @@ define([
                         hint: function (cm) {
                             var hints,
                                 cursor = cm.getCursor(),
+                                filter = '',
                                 token = cm.getTokenAt(cursor);
-                            
-                            // TODO: For now it assume hint requested at '.'
 
-                            console.log(token);
-                            console.log(cursor);
-                            if (token.type === 'variable-2' && token.string === 'core') {
-                                hints = ['snopp', 'kuk'];
-                            } else if (token.string === '.') {
+                            // TODO: For now it assume hint requested at '.'
+                            console.log('token', token);
+                            console.log('cursor', cursor);
+                            if (token.string === '.') {
                                 token = cm.getTokenAt({line: cursor.line, ch: cursor.ch - 1});
-                                console.log('newT', token);
-                                if ((token.type === 'property' || token.type === 'variable-2') &&
-                                    token.string === 'core') {
-                                    hints = coreMethods;
+                                if (token.type === 'property' || token.type === 'variable-2'|| token.type === 'keyword') {
+                                    hints = self.getHintsForClass(token);
                                 }
                             } else if (token.type === 'property') {
-
+                                filter = token.string;
+                                token = cm.getTokenAt({line: cursor.line, ch: token.start - 1});
+                                console.log('prop token', token);
+                                if (token.type === 'property' || token.type === 'variable-2'|| token.type === 'keyword') {
+                                    hints = self.getHintsForClass(token, filter);
+                                }
                             }
 
                             return {from: cursor, to: cursor, list: hints || []};
@@ -159,9 +168,44 @@ define([
         this.setOrientation(config.consoleWindow.verticalOrientation);
     };
 
-    ICoreWidget.prototype.getHintOptions = function () {
+    ICoreWidget.prototype.getHintsForClass = function (token, filter) {
+        var hints;
 
-    }
+        filter = filter || '';
+
+        switch (token.string) {
+            case 'core':
+                hints = coreMethods
+                    .filter(function (name) {
+                        return name.indexOf(filter) === 0;
+                    })
+                    .map(function (name) {
+                        return {
+                            displayText: name,
+                            text: name.substring(filter.length) + '('
+                        };
+                    });
+                break;
+            case 'blobClient':
+                hints = ['getMetadata']; // TODO: Fill out all below..
+                break;
+            case 'project':
+                hints = ['getBranchHash'];
+                break;
+            case 'logger':
+                hints = ['debug', 'info', 'warn', 'error'];
+                break;
+            case 'this':
+            case 'self':
+                hints = ['updateSuccess', 'save'];
+                break;
+            default:
+                hints = [];
+                break;
+        }
+
+        return hints;
+    };
 
     // Adding/Removing/Updating items
     ICoreWidget.prototype.addNode = function (desc) {
