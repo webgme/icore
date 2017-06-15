@@ -1,4 +1,4 @@
-/*globals define, $, WebGMEGlobal*/
+/*globals define, $, WebGMEGlobal, _*/
 /*jshint browser: true*/
 
 /**
@@ -8,6 +8,8 @@
 define([
     './ICoreKeyboard',
     'common/core/core', // Core is used for completion..
+    'common/storage/project/interface', // ProjectInterface is used for completion..
+    'plugin/PluginBase', // PluginBase is used for completion..
     'codemirror/lib/codemirror',
     'codemirror/addon/hint/show-hint',
     //'codemirror/addon/hint/javascript-hint',
@@ -15,7 +17,7 @@ define([
     './ICoreConsoleCodeMirrorMode',
     'css!./styles/ICoreWidget.css',
     'css!codemirror/addon/hint/show-hint.css'
-], function (ICoreKeyboard, Core, codeMirror) {
+], function (ICoreKeyboard, Core, ProjectInterface, PluginBase, codeMirror) {
     'use strict';
 
     var ICoreWidget,
@@ -57,22 +59,68 @@ define([
             }
         },
         CORE_EXTRA_ASYNCS = ['generateTreeDiff', 'addLibrary', 'updateLibrary', 'traverse'],
-        coreMethods;
+        PROJECT_EXCLUDES = ['ID_NAME', 'logger', 'projectCache', 'insertObject', 'insertPatchObject', 'loadObject',
+            'loadPaths'],
+        PLUGIN_EXCLUDES = ['pluginMetadata', '_currentConfig', 'isConfigured', 'notificationHandlers', 'main',
+            'updateMETA', '_createFork', 'isInvalidActiveNode', 'initialize', 'configure', 'getDefaultConfig',
+            'setCurrentConfig',
+            // These are fine to call but doesn't add any help.
+            'getMetadata', 'getId', 'getName', 'getDescription', 'getConfigStructure', 'getCurrentConfig'
+        ],
+        PROJECT_TYPE_MAP = {
+            projectId: 'STRING',
+            projectName: 'STRING',
+            CONSTANTS: 'OBJECT'
+        },
+        PLUGIN_TYPE_MAP = {
+            gmeConfig: 'OBJECT',
+            logger: 'OBJECT',
+            blobClient: 'OBJECT',
+            core: 'OBJECT',
+            project: 'OBJECT',
+            projectName: 'STRING',
+            projectId: 'STRING',
+            branchName: 'STRING',
+            branchHash: 'STRING',
+            commitHash: 'STRING',
+            currentHash: 'STRING',
+
+            rootNode: 'OBJECT',
+            activeNode: 'OBJECT',
+            activeSelection: 'ARRAY',
+
+            namespace: 'STRING',
+            META: 'OBJECT',
+            result: 'OBJECT',
+
+            save: 'ASYNC',
+            fastForward: 'ASYNC',
+            loadNodeMap: 'ASYNC'
+        },
+        coreHints,
+        pluginHints,
+        projectHints;
 
 
     ICoreWidget = function (logger, container, config) {
-        var templateId;
+        var templateId,
+            dummyCore,
+            dummyPlugin,
+            dummyProject;
         this._logger = logger.fork('Widget');
-        if (!coreMethods) {
-            coreMethods = Object.keys((new Core({
-                // Project mock (we just need to get the method names)..
-                loadObject: function () {
-                },
-                loadPaths: function () {
-                }
-            }, {globConf: WebGMEGlobal.gmeConfig, logger: logger})));
+        if (!coreHints) {
+            dummyProject = new ProjectInterface('dummy+id', {}, logger, WebGMEGlobal.gmeConfig);
 
-            coreMethods.sort();
+            projectHints = _.difference(Object.keys(dummyProject), PROJECT_EXCLUDES);
+            projectHints.sort();
+
+            dummyPlugin = new PluginBase();
+            pluginHints = _.difference(Object.keys(dummyPlugin), PLUGIN_EXCLUDES);
+            pluginHints.sort();
+
+            dummyCore = new Core(dummyProject, {globConf: WebGMEGlobal.gmeConfig, logger: logger});
+            coreHints = Object.keys(dummyCore);
+            coreHints.sort();
         }
 
         this._el = container;
@@ -145,20 +193,20 @@ define([
                                 filter,
                                 hints;
 
-                            // TODO: For now it assume hint requested at '.'
-                            console.log('token', token);
-                            console.log('cursor', cursor);
                             if (token.string === '.') {
                                 token = cm.getTokenAt({line: cursor.line, ch: cursor.ch - 1});
-                                if (token.type === 'property' || token.type === 'variable-2' || token.type === 'keyword') {
+                                if (token.type === 'property' || token.type === 'variable-2' ||
+                                    token.type === 'keyword') {
+
                                     hints = self.getHintsForClass(token);
                                 }
                             } else if (token.type === 'property') {
                                 filter = token.string;
                                 filter = filter.substring(0, filter.length - (token.end - cursor.ch));
                                 token = cm.getTokenAt({line: cursor.line, ch: token.start - 1});
-                                console.log('prop token', token);
-                                if (token.type === 'property' || token.type === 'variable-2' || token.type === 'keyword') {
+                                if (token.type === 'property' || token.type === 'variable-2' ||
+                                    token.type === 'keyword') {
+
                                     hints = self.getHintsForClass(token, filter);
                                 }
                             }
@@ -229,7 +277,7 @@ define([
 
         switch (token.string) {
             case 'core':
-                hints = coreMethods
+                hints = coreHints
                     .filter(function (name) {
                         return name.indexOf(filter) === 0;
                     })
@@ -248,7 +296,18 @@ define([
                 hints = ['getMetadata']; // TODO: Fill out all below..
                 break;
             case 'project':
-                hints = ['getBranchHash'];
+                hints = projectHints.filter(function (name) {
+                    return name.indexOf(filter) === 0;
+                })
+                    .map(function (name) {
+                        var type = PROJECT_TYPE_MAP[name] ? HINT_TYPES[PROJECT_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
+
+                        return {
+                            text: name.substring(filter.length) + '(',
+                            className: 'icore-hint',
+                            render: getRenderFunction(name, type, 'ProjectInterface.html')
+                        };
+                    });
                 break;
             case 'logger':
                 hints = ['debug', 'info', 'warn', 'error']
@@ -265,7 +324,18 @@ define([
                 break;
             case 'this':
             case 'self':
-                hints = ['updateSuccess', 'save'];
+                hints = pluginHints.filter(function (name) {
+                    return name.indexOf(filter) === 0;
+                })
+                    .map(function (name) {
+                        var type = PLUGIN_TYPE_MAP[name] ? HINT_TYPES[PLUGIN_TYPE_MAP[name]] : HINT_TYPES.FUNCTION;
+
+                        return {
+                            text: name.substring(filter.length) + '(',
+                            className: 'icore-hint',
+                            render: getRenderFunction(name, type, 'PluginBase.html')
+                        };
+                    });
                 break;
             default:
                 hints = [];
