@@ -19,20 +19,50 @@ define([
     'use strict';
 
     var ICoreWidget,
-        WIDGET_CLASS = 'i-core-widget',
+        WIDGET_CLASS = 'icore-widget',
         LOG_LEVELS = {
             debug: 0,
             info: 1,
             warn: 2,
             error: 3
         },
+        HINT_TYPES = {
+            FUNCTION: {
+                class: 'function',
+                text: 'F'
+            },
+            ASYNC: {
+                class: 'async-function',
+                text: 'F'
+            },
+            STRING: {
+                class: 'string',
+                text: 'S'
+            },
+            ARRAY: {
+                class: 'array',
+                text: 'A'
+            },
+            BOOLEAN: {
+                class: 'boolean',
+                text: 'B'
+            },
+            NUMBER: {
+                class: 'number',
+                text: 'N'
+            },
+            OBJECT: {
+                class: 'object',
+                text: 'O'
+            }
+        },
+        CORE_EXTRA_ASYNCS = ['generateTreeDiff', 'addLibrary', 'updateLibrary', 'traverse'],
         coreMethods;
 
 
     ICoreWidget = function (logger, container, config) {
         var templateId;
         this._logger = logger.fork('Widget');
-
         if (!coreMethods) {
             coreMethods = Object.keys((new Core({
                 // Project mock (we just need to get the method names)..
@@ -107,25 +137,28 @@ define([
                 },
                 'Ctrl-Space': function (cm) {
                     cm.showHint({
+                        closeOnUnfocus: false,
+                        completeSingle: false,
                         hint: function (cm) {
-                            var hints,
-                                cursor = cm.getCursor(),
-                                filter = '',
-                                token = cm.getTokenAt(cursor);
+                            var cursor = cm.getCursor(),
+                                token = cm.getTokenAt(cursor),
+                                filter,
+                                hints;
 
                             // TODO: For now it assume hint requested at '.'
                             console.log('token', token);
                             console.log('cursor', cursor);
                             if (token.string === '.') {
                                 token = cm.getTokenAt({line: cursor.line, ch: cursor.ch - 1});
-                                if (token.type === 'property' || token.type === 'variable-2'|| token.type === 'keyword') {
+                                if (token.type === 'property' || token.type === 'variable-2' || token.type === 'keyword') {
                                     hints = self.getHintsForClass(token);
                                 }
                             } else if (token.type === 'property') {
                                 filter = token.string;
+                                filter = filter.substring(0, filter.length - (token.end - cursor.ch));
                                 token = cm.getTokenAt({line: cursor.line, ch: token.start - 1});
                                 console.log('prop token', token);
-                                if (token.type === 'property' || token.type === 'variable-2'|| token.type === 'keyword') {
+                                if (token.type === 'property' || token.type === 'variable-2' || token.type === 'keyword') {
                                     hints = self.getHintsForClass(token, filter);
                                 }
                             }
@@ -169,7 +202,28 @@ define([
     };
 
     ICoreWidget.prototype.getHintsForClass = function (token, filter) {
-        var hints;
+        var self = this,
+            hints;
+
+        function getRenderFunction(name, type, docPage) {
+            return function (el/*, cm, data*/) {
+                var $el = $(el),
+                    anchor = $('<a target="_blank" title="View docs"/>');
+                anchor.attr('href', '/docs/source/' + docPage + '#' + name + '__anchor');
+                anchor.append($('<i class="glyphicon glyphicon-share"/>'));
+
+                $el.append($('<span>', {
+                    class: 'circle ' + type.class,
+                    title: type.class,
+                    text: type.text
+                }));
+                $el.append($('<span>', {
+                    class: 'hint-text ' + type.class,
+                    text: name
+                }));
+                $el.append(anchor);
+            };
+        }
 
         filter = filter || '';
 
@@ -180,9 +234,13 @@ define([
                         return name.indexOf(filter) === 0;
                     })
                     .map(function (name) {
+                        var type = name.indexOf('load') === 0 || CORE_EXTRA_ASYNCS.indexOf(name) > -1 ?
+                            HINT_TYPES.ASYNC : HINT_TYPES.FUNCTION;
+
                         return {
-                            displayText: name,
-                            text: name.substring(filter.length) + '('
+                            text: name.substring(filter.length) + '(',
+                            className: 'icore-hint',
+                            render: getRenderFunction(name, type, 'Core.html')
                         };
                     });
                 break;
@@ -193,7 +251,17 @@ define([
                 hints = ['getBranchHash'];
                 break;
             case 'logger':
-                hints = ['debug', 'info', 'warn', 'error'];
+                hints = ['debug', 'info', 'warn', 'error']
+                    .filter(function (name) {
+                        return name.indexOf(filter) === 0;
+                    })
+                    .map(function (name) {
+                        return {
+                            text: name.substring(filter.length) + '(',
+                            className: 'icore-hint',
+                            render: getRenderFunction(name, HINT_TYPES.FUNCTION, 'GmeLogger.html')
+                        };
+                    });
                 break;
             case 'this':
             case 'self':

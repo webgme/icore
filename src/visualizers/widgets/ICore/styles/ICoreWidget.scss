@@ -2,7 +2,7 @@
  * This file is for any scss that you may want for this visualizer.
  */
 
-.i-core-widget {
+.icore-widget {
   outline: none;
   padding: 2px;
   //padding-top: 0;
@@ -69,6 +69,42 @@
     }
     span.cm-error-log {
       color: #b51313;
+    }
+  }
+}
+
+
+li.CodeMirror-hint {
+  &.icore-hint {
+    padding-top: 1px;
+    .circle {
+      position: absolute;
+
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      font-size: 11px;
+      color: black;
+      line-height: 12px;
+      font-style: italic;
+      text-align: center;
+      background: #ff797d;
+      &.function {
+        background: orange;
+      }
+      &.async-function {
+        background: orange;
+      }
+    }
+    .hint-text {
+      margin-left: 20px;
+      &.async-function {
+        font-style: italic;
+      }
+    }
+    a {
+      margin-left: 5px;
+      float: right;
     }
   }
 }
