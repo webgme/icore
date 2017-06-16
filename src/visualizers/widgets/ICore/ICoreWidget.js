@@ -147,6 +147,8 @@ define([
         this._autoSaveTimerId = null;
         this._templates = config.templates;
         this._defaultTemplateId = null;
+        this._verticalSplit = true;
+        this._splitterRelPos = 0.5;
 
         for (templateId in this._templates) {
             if (this._templates[templateId].default) {
@@ -186,10 +188,13 @@ define([
                     self.saveCode();
                 },
                 Esc: function () {
-                    self.toggleConsole();
+                    self.clearConsole();
                 },
                 'Ctrl-Q': function () {
                     self.executeCode();
+                },
+                'Ctrl-O': function () {
+                    self.setOrientation(!self._verticalSplit);
                 },
                 Tab: function betterTab(cm) {
                     if (cm.somethingSelected()) {
@@ -253,6 +258,16 @@ define([
 
         this._codeEditor.setOption('extraKeys', extraKeys);
 
+        // The Splitter
+        this._splitterEl = $('<div/>', {class: 'icore-splitter'});
+        this._el.append(this._splitterEl);
+        this._splitterEl.on('mousedown', function (event) {
+            self._startSplitterResize(event);
+            event.stopPropagation();
+            event.preventDefault();
+        });
+        this._splitterRelPos = 0.5;
+
         // The console window.
         this._consoleWindow = codeMirror(this._el[0], consoleWindowOptions);
         $(this._consoleWindow.getWrapperElement()).addClass('console-window');
@@ -266,8 +281,7 @@ define([
     };
 
     ICoreWidget.prototype.getHintsForClass = function (token, filter) {
-        var self = this,
-            hints;
+        var hints;
 
         function getRenderFunction(name, type, docPage) {
             return function (el/*, cm, data*/) {
@@ -353,6 +367,7 @@ define([
                         return name.indexOf(filter) === 0;
                     })
                     .map(function (name) {
+                        var type = HINT_TYPES.FUNCTION;
                         return {
                             text: getCompletionText(name, filter, type),
                             className: 'icore-hint',
@@ -479,25 +494,13 @@ define([
         this._codeEditor.focus();
     };
 
-    ICoreWidget.prototype.toggleConsole = function () {
-        this._el.toggleClass('no-console-window');
-        this._codeEditor.focus();
-    };
-
     ICoreWidget.prototype.setOrientation = function (vertical) {
-        this._verticalOrientation = vertical;
-
-        if (this._verticalOrientation) {
-            this._el.addClass('vertical-orientation');
-            this._el.removeClass('horizontal-orientation');
-        } else {
-            this._el.addClass('horizontal-orientation');
-            this._el.removeClass('vertical-orientation');
-        }
+        this._verticalSplit = vertical;
 
         this._codeEditor.focus();
         this._codeEditor.refresh();
         this._consoleWindow.refresh();
+        this._updateUI();
     };
 
     ICoreWidget.prototype.loadTemplate = function (id) {
@@ -520,13 +523,143 @@ define([
         this._codeEditor.focus();
     };
 
-    /* * * * * * * * Visualizer life cycle callbacks * * * * * * * */
+    // Splitter methods (borrowed from SplitPanel)
+    ICoreWidget.prototype._startSplitterResize = function (event) {
+        var self = this;
+
+        this._splitterResize = this._splitterEl.clone().addClass('resize');
+        this._el.append(this._splitterResize);
+
+        this._splitterResizePos = this._splitterRelPos;
+        this._splitStartMousePos = this._verticalSplit ? event.pageX : event.pageY;
+
+        $(document).on('mousemove.icore-widget', function (event) {
+            self._onMouseMove(event);
+        });
+        $(document).on('mouseup.icore-widget', function (event) {
+            self._onMouseUp(event);
+        });
+    };
+
+    ICoreWidget.prototype._onMouseMove = function (event) {
+        var mousePos = this._verticalSplit ? event.pageX : event.pageY,
+            mouseDelta = mousePos - this._splitStartMousePos,
+            maxVal = this._verticalSplit ? this._width : this._height,
+            resizeDelta = mouseDelta / maxVal,
+            snapDistance = 10 / maxVal,
+            minPanelSize = 20 / maxVal;
+
+        this._splitterResizePos = this._splitterRelPos + resizeDelta;
+
+        if (this._splitterResizePos >= 0.5 - snapDistance &&
+            this._splitterResizePos <= 0.5 + snapDistance) {
+            this._splitterResizePos = 0.5;
+        }
+
+        if (this._splitterResizePos < minPanelSize) {
+            this._splitterResizePos = minPanelSize;
+        }
+
+        if (this._splitterResizePos > 1 - minPanelSize) {
+            this._splitterResizePos = 1 - minPanelSize;
+        }
+
+        if (this._verticalSplit) {
+            this._splitterResize.css({
+                width: 6,
+                height: this._height,
+                top: 0,
+                left: Math.floor((this._width - 6) * this._splitterResizePos)
+            });
+        } else {
+            this._splitterResize.css({
+                width:  this._width,
+                height: 6,
+                top: Math.floor((this._height - 6) * this._splitterResizePos),
+                left: 0
+            });
+        }
+    };
+
+    ICoreWidget.prototype._onMouseUp = function () {
+        $(document).off('mousemove.icore-widget');
+        $(document).off('mouseup.icore-widget');
+
+        this._splitterRelPos = this._splitterResizePos;
+
+        this._splitterResize.remove();
+        this._splitterResize = undefined;
+        this._splitterResizePos = undefined;
+
+        this._updateUI();
+    };
+
+    ICoreWidget.prototype._updateUI = function () {
+        var w1 = this._width,
+            h1 = this._height,
+            w2 = this._width,
+            h2 = this._height,
+            sw = 4,
+            sh = 4,
+            p1Top = 0,
+            p1Left = 0,
+            splitterTop = 0,
+            splitterLeft = 0,
+            p2Top = 0,
+            p2Left = 0;
+
+
+        if (this._verticalSplit) {
+            sh = this._height;
+            w1 = Math.floor((this._width - sw) * this._splitterRelPos);
+            w2 = this._width - w1 - sw;
+            this._splitterEl.addClass('vertical');
+            p1Left = 0;
+            splitterLeft = w1;
+            p2Left = w1 + sw;
+        } else {
+            sw = this._width;
+            h1 = Math.floor((this._height - sh) * this._splitterRelPos);
+            h2 = this._height - h1 - sh;
+            this._splitterEl.addClass('horizontal');
+            p1Top = 0;
+            splitterTop = h1;
+            p2Top = h1 + sh;
+        }
+
+        this._splitterEl.css({
+            width: sw,
+            height: sh,
+            top: splitterTop,
+            left: splitterLeft
+        });
+
+        $(this._codeEditor.getWrapperElement()).css({
+            width: w1,
+            height: h1,
+            top: p1Top,
+            left: p1Left
+        });
+
+        $(this._consoleWindow.getWrapperElement()).css({
+            width: w2,
+            height: h2,
+            top: p2Top,
+            left: p2Left
+        });
+    };
+
     ICoreWidget.prototype.onWidgetContainerResize = function (width, height) {
+        this._width = width;
+        this._height = height;
+
         this._el.width(width);
         this._el.height(height);
         this._logger.debug('Widget is resizing...');
+        this._updateUI();
     };
 
+    /* * * * * * * * Visualizer life cycle callbacks * * * * * * * */
     ICoreWidget.prototype.destroy = function () {
         clearTimeout(this._autoSaveTimerId);
     };

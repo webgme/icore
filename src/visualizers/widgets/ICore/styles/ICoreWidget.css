@@ -4,33 +4,28 @@
 .icore-widget {
   outline: none;
   padding: 2px; }
-  .icore-widget.vertical-orientation {
-    display: inline-flex; }
-    .icore-widget.vertical-orientation .code-editor {
-      height: 100%;
-      width: 50%; }
-    .icore-widget.vertical-orientation .console-window {
-      height: 100%;
-      width: 50%; }
-  .icore-widget.horizontal-orientation {
-    display: block; }
-    .icore-widget.horizontal-orientation .code-editor {
-      height: 50%;
-      width: 100%; }
-    .icore-widget.horizontal-orientation .console-window {
-      height: 50%;
-      width: 100%; }
-  .icore-widget .code-editor.CodeMirror-focused {
-    border-color: #cccccc;
-    box-shadow: none; }
-  .icore-widget .console-window.CodeMirror-focused {
-    border-color: #cccccc;
-    box-shadow: none; }
-  .icore-widget.no-console-window .code-editor {
-    height: 100%;
-    width: 100%; }
-  .icore-widget.no-console-window .console-window {
-    display: none; }
+  .icore-widget .icore-splitter {
+    z-index: 100;
+    position: absolute;
+    box-sizing: border-box; }
+    .icore-widget .icore-splitter.vertical {
+      cursor: ew-resize; }
+    .icore-widget .icore-splitter.horizontal {
+      cursor: ns-resize; }
+    .icore-widget .icore-splitter.resize {
+      background-color: #C4E1A4; }
+  .icore-widget .code-editor {
+    position: absolute;
+    padding: 2px; }
+    .icore-widget .code-editor.CodeMirror-focused {
+      border-color: #cccccc;
+      box-shadow: none; }
+  .icore-widget .console-window {
+    position: absolute;
+    padding: 2px; }
+    .icore-widget .console-window.CodeMirror-focused {
+      border-color: #cccccc;
+      box-shadow: none; }
   .icore-widget .console-window span.cm-debug {
     color: #0b93d5; }
   .icore-widget .console-window span.cm-info {

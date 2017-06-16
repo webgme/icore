@@ -10,30 +10,27 @@
   //padding-bottom: 10px;
   //padding-left: 0;
 
-  &.vertical-orientation {
-    display: inline-flex;
-    .code-editor {
-      height: 100%;
-      width: 50%;
+  .icore-splitter {
+    z-index: 100;
+    position: absolute;
+    box-sizing: border-box;
+
+    &.vertical {
+      cursor: ew-resize;
     }
-    .console-window {
-      height: 100%;
-      width: 50%;
+
+    &.horizontal {
+      cursor: ns-resize;
     }
-  }
-  &.horizontal-orientation {
-    display: block;
-    .code-editor {
-      height: 50%;
-      width: 100%;
-    }
-    .console-window {
-      height: 50%;
-      width: 100%;
+
+    &.resize {
+      background-color: #C4E1A4;
     }
   }
 
   .code-editor {
+    position: absolute;
+    padding: 2px;
     &.CodeMirror-focused {
       border-color: #cccccc;
       box-shadow: none;
@@ -41,19 +38,11 @@
   }
 
   .console-window {
+    position: absolute;
+    padding: 2px;
     &.CodeMirror-focused {
       border-color: #cccccc;
       box-shadow: none;
-    }
-  }
-
-  &.no-console-window {
-    .code-editor {
-      height: 100%;
-      width: 100%;
-    }
-    .console-window {
-      display: none;
     }
   }
 

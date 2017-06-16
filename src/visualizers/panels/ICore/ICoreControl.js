@@ -314,7 +314,7 @@ define([
 
         // Save
         this.$btnSave = toolBar.addButton({
-            title: 'Save code [ctrl + s]',
+            title: 'Save code [Ctrl + S]',
             icon: 'glyphicon glyphicon-floppy-disk',
             clickFn: function (/*data*/) {
                 self._widget.saveCode();
@@ -350,14 +350,11 @@ define([
         this._toolbarItems.push(toolBar.addSeparator());
 
         // Orientation
-        this.$btnOrientation = toolBar.addToggleButton({
-            title: 'Switch to ' + (self._config.consoleWindow.verticalOrientation ? 'horizontal' : 'vertical') +
-            ' orientation',
+        this.$btnOrientation = toolBar.addButton({
+            title: 'Switch orientation [Ctrl + O]',
             icon: 'fa fa-columns',
-            clickFn: function (data, toggled) {
-                self.$btnOrientation._btn.attr('title', 'Switch to ' + (toggled ? 'horizontal' : 'vertical') +
-                    ' orientation');
-
+            clickFn: function () {
+                var toggled = !self._widget._verticalSplit;
                 ComponentSettings.updateComponentSettings(self._configId, {
                         consoleWindow: {
                             verticalOrientation: toggled
@@ -374,8 +371,6 @@ define([
                 self._widget.setOrientation(toggled);
             }
         });
-
-        this.$btnOrientation.setToggled(self._config.consoleWindow.verticalOrientation);
 
         this._toolbarItems.push(this.$btnOrientation);
 
@@ -417,7 +412,7 @@ define([
 
         // Clear console
         this.$btnClearConsole = toolBar.addButton({
-            title: 'Clear Console',
+            title: 'Clear Console [Esc]',
             icon: 'fa fa-ban',
             clickFn: function (/*data*/) {
                 self._widget.clearConsole();
@@ -430,7 +425,7 @@ define([
 
         // Execute
         this.$btnExecute = toolBar.addButton({
-            title: 'Execute code [ctrl + q]',
+            title: 'Execute code [Ctrl + Q]',
             icon: 'glyphicon glyphicon-play-circle',
             clickFn: function (/*data*/) {
                 self._widget.executeCode();
