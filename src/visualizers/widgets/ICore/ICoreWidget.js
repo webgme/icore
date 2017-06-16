@@ -6,18 +6,19 @@
  */
 
 define([
-    './ICoreKeyboard',
-    'common/core/core', // Core is used for completion..
-    'common/storage/project/interface', // ProjectInterface is used for completion..
-    'plugin/PluginBase', // PluginBase is used for completion..
+    // These are only used to generate the hints for code completion..
+    'common/core/core',
+    'common/storage/project/interface',
+    'plugin/PluginBase',
+    'blob/BlobClient',
+
     'codemirror/lib/codemirror',
     'codemirror/addon/hint/show-hint',
-    //'codemirror/addon/hint/javascript-hint',
     'jquery',
     './ICoreConsoleCodeMirrorMode',
     'css!./styles/ICoreWidget.css',
     'css!codemirror/addon/hint/show-hint.css'
-], function (ICoreKeyboard, Core, ProjectInterface, PluginBase, codeMirror) {
+], function (Core, ProjectInterface, PluginBase, BlobClient, codeMirror) {
     'use strict';
 
     var ICoreWidget,
@@ -61,17 +62,17 @@ define([
         CORE_EXTRA_ASYNCS = ['generateTreeDiff', 'addLibrary', 'updateLibrary', 'traverse'],
         PROJECT_EXCLUDES = ['ID_NAME', 'logger', 'projectCache', 'insertObject', 'insertPatchObject', 'loadObject',
             'loadPaths'],
-        PLUGIN_EXCLUDES = ['pluginMetadata', '_currentConfig', 'isConfigured', 'notificationHandlers', 'main',
-            'updateMETA', '_createFork', 'isInvalidActiveNode', 'initialize', 'configure', 'getDefaultConfig',
-            'setCurrentConfig',
-            // These are fine to call but doesn't add any help.
-            'getMetadata', 'getId', 'getName', 'getDescription', 'getConfigStructure', 'getCurrentConfig'
-        ],
         PROJECT_TYPE_MAP = {
             projectId: 'STRING',
             projectName: 'STRING',
             CONSTANTS: 'OBJECT'
         },
+        PLUGIN_EXCLUDES = ['pluginMetadata', '_currentConfig', 'isConfigured', 'notificationHandlers', 'main',
+            'updateMETA', '_createFork', 'isInvalidActiveNode', 'initialize', 'configure', 'setCurrentConfig',
+            // These are fine to call but doesn't add any help.
+            'getMetadata', 'getId', 'getName', 'getDescription', 'getConfigStructure', 'getCurrentConfig',
+            'addCommitToResult', 'getDefaultConfig', 'getVersion'
+        ],
         PLUGIN_TYPE_MAP = {
             gmeConfig: 'OBJECT',
             logger: 'OBJECT',
@@ -97,9 +98,18 @@ define([
             fastForward: 'ASYNC',
             loadNodeMap: 'ASYNC'
         },
+        BLOB_EXCLUDES = [
+            // Also excludes all ending with URL
+            '_getUrl', 'getArtifact', 'setToken'],
+        BLOB_TYPE_MAP = {
+            createArtifact: 'FUNCTION',
+            getHumanSize: 'FUNCTION',
+            getDownloadURL: 'FUNCTION'
+        },
         coreHints,
         pluginHints,
-        projectHints;
+        projectHints,
+        blobHints;
 
 
     ICoreWidget = function (logger, container, config) {
@@ -107,20 +117,28 @@ define([
             dummyCore,
             dummyPlugin,
             dummyProject;
+
         this._logger = logger.fork('Widget');
         if (!coreHints) {
             dummyProject = new ProjectInterface('dummy+id', {}, logger, WebGMEGlobal.gmeConfig);
+
+            dummyCore = new Core(dummyProject, {globConf: WebGMEGlobal.gmeConfig, logger: logger});
+            coreHints = Object.keys(dummyCore);
+            coreHints.sort();
 
             projectHints = _.difference(Object.keys(dummyProject), PROJECT_EXCLUDES);
             projectHints.sort();
 
             dummyPlugin = new PluginBase();
-            pluginHints = _.difference(Object.keys(dummyPlugin), PLUGIN_EXCLUDES);
+            pluginHints = _.union(Object.keys(PluginBase.prototype), Object.keys(dummyPlugin));
+            pluginHints = _.difference(pluginHints, PLUGIN_EXCLUDES);
             pluginHints.sort();
 
-            dummyCore = new Core(dummyProject, {globConf: WebGMEGlobal.gmeConfig, logger: logger});
-            coreHints = Object.keys(dummyCore);
-            coreHints.sort();
+            blobHints = _.difference(Object.keys(BlobClient.prototype), BLOB_EXCLUDES);
+            blobHints = blobHints.filter(function (name) {
+                return name === 'getDownloadURL' || !name.match('URL$');
+            });
+            blobHints.sort();
         }
 
         this._el = container;
@@ -145,8 +163,6 @@ define([
 
         this._logger.debug('ctor finished');
     };
-
-    //_.extend(ICoreWidget.prototype, ICoreKeyboard.prototype);
 
     ICoreWidget.prototype._initialize = function (config) {
         var self = this,
@@ -273,6 +289,17 @@ define([
             };
         }
 
+        function getCompletionText(name, filter, type) {
+            var text = name.substring(filter.length);
+
+            // FIXME: This is a little bit sloppy..
+            if (type.text === 'F') {
+                text += '(';
+            }
+
+            return text;
+        }
+
         filter = filter || '';
 
         switch (token.string) {
@@ -286,14 +313,25 @@ define([
                             HINT_TYPES.ASYNC : HINT_TYPES.FUNCTION;
 
                         return {
-                            text: name.substring(filter.length) + '(',
+                            text: getCompletionText(name, filter, type),
                             className: 'icore-hint',
                             render: getRenderFunction(name, type, 'Core.html')
                         };
                     });
                 break;
             case 'blobClient':
-                hints = ['getMetadata']; // TODO: Fill out all below..
+                hints = blobHints.filter(function (name) {
+                    return name.indexOf(filter) === 0;
+                })
+                    .map(function (name) {
+                        var type = BLOB_TYPE_MAP[name] ? HINT_TYPES[BLOB_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
+
+                        return {
+                            text: getCompletionText(name, filter, type),
+                            className: 'icore-hint',
+                            render: getRenderFunction(name, type, 'BlobClient.html')
+                        };
+                    });
                 break;
             case 'project':
                 hints = projectHints.filter(function (name) {
@@ -303,7 +341,7 @@ define([
                         var type = PROJECT_TYPE_MAP[name] ? HINT_TYPES[PROJECT_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
 
                         return {
-                            text: name.substring(filter.length) + '(',
+                            text: getCompletionText(name, filter, type),
                             className: 'icore-hint',
                             render: getRenderFunction(name, type, 'ProjectInterface.html')
                         };
@@ -316,7 +354,7 @@ define([
                     })
                     .map(function (name) {
                         return {
-                            text: name.substring(filter.length) + '(',
+                            text: getCompletionText(name, filter, type),
                             className: 'icore-hint',
                             render: getRenderFunction(name, HINT_TYPES.FUNCTION, 'GmeLogger.html')
                         };
@@ -331,7 +369,7 @@ define([
                         var type = PLUGIN_TYPE_MAP[name] ? HINT_TYPES[PLUGIN_TYPE_MAP[name]] : HINT_TYPES.FUNCTION;
 
                         return {
-                            text: name.substring(filter.length) + '(',
+                            text: getCompletionText(name, filter, type),
                             className: 'icore-hint',
                             render: getRenderFunction(name, type, 'PluginBase.html')
                         };
