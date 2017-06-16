@@ -354,7 +354,7 @@ define([
 
         // Orientation
         this.$btnOrientation = toolBar.addButton({
-            title: 'Switch orientation [Ctrl + O]',
+            title: 'Switch orientation',
             icon: 'fa fa-columns',
             clickFn: function () {
                 var toggled = !self._widget._verticalSplit;

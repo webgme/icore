@@ -193,9 +193,6 @@ define([
                 'Ctrl-Q': function () {
                     self.executeCode();
                 },
-                'Ctrl-O': function () {
-                    self.setOrientation(!self._verticalSplit);
-                },
                 Tab: function betterTab(cm) {
                     if (cm.somethingSelected()) {
                         cm.indentSelection('add');
@@ -664,6 +661,7 @@ define([
     /* * * * * * * * Visualizer life cycle callbacks * * * * * * * */
     ICoreWidget.prototype.destroy = function () {
         clearTimeout(this._autoSaveTimerId);
+        this._el.off();
     };
 
     ICoreWidget.prototype.onActivate = function () {
