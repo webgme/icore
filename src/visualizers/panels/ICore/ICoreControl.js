@@ -48,7 +48,18 @@ define([
                 }
             }
 
-            self._widget._codeEditor.focus();
+            self._widget.setUnsavedChanges(false);
+            setTimeout(function () {
+                self._widget._codeEditor.focus();
+            });
+        };
+
+        this._widget.setUnsavedChanges = function (unsavedChanges) {
+            if (unsavedChanges) {
+                self.$btnSave._btn.enabled(self._isEditable);
+            } else {
+                self.$btnSave._btn.enabled(false);
+            }
         };
 
         this._widget.executeCode = function () {
@@ -231,10 +242,12 @@ define([
     };
 
     ICoreControl.prototype._setEditable = function (editable) {
-        this._isEditable = editable;
+        if (this._isEditable !== editable) {
+            this._isEditable = editable;
 
-        this.$btnSave._btn.enabled(editable);
-        this.$btnAutoSave._btn.enabled(editable);
+            this.$btnSave._btn.enabled(editable);
+            this.$btnAutoSave._btn.enabled(editable);
+        }
     };
 
     /* * * * * * * * * * Updating the toolbar * * * * * * * * * */
@@ -275,17 +288,6 @@ define([
 
         this._toolbarItems.push(toolBar.addSeparator());
 
-        // Settings
-        // this.$btnSettings = toolBar.addButton({
-        //     title: 'ICore Settings',
-        //     icon: 'glyphicon glyphicon-cog',
-        //     clickFn: function (/*data*/) {
-        //         console.log('settings');
-        //     }
-        // });
-        //
-        // this._toolbarItems.push(this.$btnSettings);
-
         // Load template
         var templateIds = Object.keys(this._config.templates).sort();
 
@@ -312,17 +314,6 @@ define([
             this._toolbarItems.push(this.$btnLoadTemplate);
         }
 
-        // Save
-        this.$btnSave = toolBar.addButton({
-            title: 'Save code [Ctrl + S]',
-            icon: 'glyphicon glyphicon-floppy-disk',
-            clickFn: function (/*data*/) {
-                self._widget.saveCode();
-            }
-        });
-
-        this._toolbarItems.push(this.$btnSave);
-
         // Auto-save
         this.$btnAutoSave = toolBar.addToggleButton({
             title: 'Turn ' + (self._config.codeEditor.autoSave ? 'off' : 'on') + ' auto-save',
@@ -346,6 +337,18 @@ define([
         this.$btnAutoSave.setToggled(self._config.codeEditor.autoSave);
 
         this._toolbarItems.push(this.$btnAutoSave);
+
+        // Save
+        this.$btnSave = toolBar.addButton({
+            title: 'Save code [Ctrl + S]',
+            icon: 'glyphicon glyphicon-floppy-disk',
+            clickFn: function (/*data*/) {
+                self._widget.saveCode();
+            }
+        });
+
+        this._toolbarItems.push(this.$btnSave);
+        this.$btnSave._btn.enabled(false);
 
         this._toolbarItems.push(toolBar.addSeparator());
 
@@ -377,7 +380,7 @@ define([
         // Set log-level
         var logLvlBtn = $('<i class="log-level-btn">' + self._config.consoleWindow.logLevel + '</i>');
         this.$btnSetLogLevel = toolBar.addDropDownButton({
-            title: 'Console Log Level',
+            title: 'Console log-level',
             icon: logLvlBtn,
             menuClass: 'no-min-width',
             clickFn: function () {
@@ -412,7 +415,7 @@ define([
 
         // Clear console
         this.$btnClearConsole = toolBar.addButton({
-            title: 'Clear Console [Esc]',
+            title: 'Clear console [Esc]',
             icon: 'fa fa-ban',
             clickFn: function (/*data*/) {
                 self._widget.clearConsole();

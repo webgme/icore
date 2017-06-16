@@ -253,6 +253,8 @@ define([
                         self.saveCode();
                     }, config.codeEditor.autoSaveInterval);
                 }
+
+                self.setUnsavedChanges(true);
             }
         });
 
