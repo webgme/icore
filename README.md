@@ -1,10 +1,10 @@
 # ICore
-Code-editor for interacting with models uses the same APIs available from a plugin (context is the main function of a plugin).
+Code-editor for interacting with models uses the same APIs available from a plugin (the provided context is the main function of a plugin).
 Note that this visualizer uses `eval` to evaluate the code and is recommended to only be used at dev-deployments or at least not at deployments where security is a major concern.
 
 - See [ICoreDefaultConfig](src/visualizers/panels/ICore/ICoreDefaultConfig.json) for options.
 
-![ICore](images/icore.png "ICore in action - note the controls in the toolbar")
+![ICore](images/icore_v030.png "ICore in action - [Ctrl + Space] brings up code suggestions for the major GME APIs.")
 
 ## Importing into other repository
 ```
