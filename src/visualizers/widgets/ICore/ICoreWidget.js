@@ -650,6 +650,7 @@ define([
             sh = this._height;
             w1 = Math.floor((this._width - sw) * this._splitterRelPos);
             w2 = this._width - w1 - sw;
+            this._splitterEl.removeClass('horizontal');
             this._splitterEl.addClass('vertical');
             p1Left = 0;
             splitterLeft = w1;
@@ -658,6 +659,7 @@ define([
             sw = this._width;
             h1 = Math.floor((this._height - sh) * this._splitterRelPos);
             h2 = this._height - h1 - sh;
+            this._splitterEl.removeClass('vertical');
             this._splitterEl.addClass('horizontal');
             p1Top = 0;
             splitterTop = h1;

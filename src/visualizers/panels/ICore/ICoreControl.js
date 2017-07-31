@@ -63,6 +63,7 @@ define([
         };
 
         this._widget.executeCode = function () {
+            self._widget.clearConsole();
             self.evaluateCode(function (err) {
                 if (err) {
                     self._widget.addConsoleMessage('error', ['Execution failed with error:', err.stack]);
@@ -299,6 +300,8 @@ define([
 
         this._toolbarItems.push(toolBar.addSeparator());
 
+        
+
         // Load template
         var templateIds = Object.keys(this._config.templates).sort();
 
@@ -425,15 +428,15 @@ define([
         this._toolbarItems.push(this.$btnSetLogLevel);
 
         // Clear console
-        this.$btnClearConsole = toolBar.addButton({
-            title: 'Clear console [Esc]',
-            icon: 'fa fa-ban',
-            clickFn: function (/*data*/) {
-                self._widget.clearConsole();
-            }
-        });
-
-        this._toolbarItems.push(this.$btnClearConsole);
+        // this.$btnClearConsole = toolBar.addButton({
+        //     title: 'Clear console [Esc]',
+        //     icon: 'fa fa-ban',
+        //     clickFn: function (/*data*/) {
+        //         self._widget.clearConsole();
+        //     }
+        // });
+        //
+        // this._toolbarItems.push(this.$btnClearConsole);
 
         this._toolbarItems.push(toolBar.addSeparator());
 

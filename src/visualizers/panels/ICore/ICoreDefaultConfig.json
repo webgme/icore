@@ -39,5 +39,6 @@
     "autoSave": false,
     "autoSaveInterval": 2000,
     "scriptCodeAttribute": "scriptCode"
-  }
+  },
+  "defaultPluginId": ""
 }
