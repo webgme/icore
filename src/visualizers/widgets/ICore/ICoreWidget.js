@@ -11,6 +11,7 @@ define([
     'common/storage/project/interface',
     'plugin/PluginBase',
     'blob/BlobClient',
+    'js/Utils/WebGMEUrlManager',
 
     'codemirror/lib/codemirror',
     'codemirror/addon/hint/show-hint',
@@ -18,7 +19,7 @@ define([
     './ICoreConsoleCodeMirrorMode',
     'css!./styles/ICoreWidget.css',
     'css!codemirror/addon/hint/show-hint.css'
-], function (Core, ProjectInterface, PluginBase, BlobClient, codeMirror) {
+], function (Core, ProjectInterface, PluginBase, BlobClient, WebGMEUrlManager, codeMirror) {
     'use strict';
 
     var ICoreWidget,
@@ -57,6 +58,10 @@ define([
             OBJECT: {
                 class: 'object',
                 text: 'O'
+            },
+            META_NODE: {
+                class: 'meta-node',
+                text: 'M'
             }
         },
         CORE_EXTRA_ASYNCS = ['generateTreeDiff', 'addLibrary', 'updateLibrary', 'traverse'],
@@ -140,6 +145,9 @@ define([
             });
             blobHints.sort();
         }
+
+        // These are populated by the controller.
+        this.METAHints = {};
 
         this._el = container;
         this._logLevel = LOG_LEVELS[config.consoleWindow.logLevel] || 0;
@@ -280,13 +288,31 @@ define([
     };
 
     ICoreWidget.prototype.getHintsForClass = function (token, filter) {
-        var hints;
+        var self = this,
+            hints;
 
-        function getRenderFunction(name, type, docPage) {
+        function getRenderFunction(name, type, path) {
             return function (el/*, cm, data*/) {
                 var $el = $(el),
-                    anchor = $('<a target="_blank" title="View docs"/>');
-                anchor.attr('href', '/docs/source/' + docPage + '#' + name + '__anchor');
+                    anchor = $('<a target="_blank"/>'),
+                    url;
+
+                if (type === HINT_TYPES.META_NODE) {
+
+                    url = '/?' + WebGMEUrlManager.getSearchQuery({
+                        projectId: WebGMEGlobal.State.getActiveProjectName(),
+                        branchName: WebGMEGlobal.State.getActiveBranch(),
+                        commitId: WebGMEGlobal.State.getActiveCommit(),
+                        nodeId: path
+                    });
+
+                    anchor.prop('title', 'View meta-node in new window');
+                    anchor.attr('href', url);
+                } else {
+                    anchor.prop('title', 'View docs');
+                    anchor.attr('href', '/docs/source/' + path + '#' + name + '__anchor');
+                }
+
                 anchor.append($('<i class="glyphicon glyphicon-share"/>'));
 
                 $el.append($('<span>', {
@@ -305,8 +331,7 @@ define([
         function getCompletionText(name, filter, type) {
             var text = name.substring(filter.length);
 
-            // FIXME: This is a little bit sloppy..
-            if (type.text === 'F') {
+            if (type === HINT_TYPES.FUNCTION || type === HINT_TYPES.ASYNC) {
                 text += '(';
             }
 
@@ -386,6 +411,19 @@ define([
                             text: getCompletionText(name, filter, type),
                             className: 'icore-hint',
                             render: getRenderFunction(name, type, 'PluginBase.html')
+                        };
+                    });
+                break;
+            case 'META':
+                hints = Object.keys(this.METAHints).filter(function (name) {
+                    return name.indexOf(filter) === 0;
+                })
+                    .map(function (name) {
+                        var type = HINT_TYPES.META_NODE;
+                        return {
+                            text: getCompletionText(name, filter, type),
+                            className: 'icore-hint',
+                            render: getRenderFunction(name, type, self.METAHints[name])
                         };
                     });
                 break;

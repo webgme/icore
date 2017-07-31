@@ -127,17 +127,11 @@ define([
                 name: node.getAttribute('name'),
                 scriptCode: node.getAttribute(this._config.codeEditor.scriptCodeAttribute),
                 editable: node.isReadOnly() === false,
-                hasScriptAttribute: false
+                hasScriptAttribute: true
             };
-
             if (node.getId() !== '') {
                 objDescriptor.hasScriptAttribute = node.isValidAttributeValueOf(
-                    this._config.codeEditor.scriptCodeAttribute, '');
-
-                objDescriptor.editable = objDescriptor.editable && objDescriptor.hasScriptAttribute;
-            } else {
-                // We say that the root node has the script attribute.
-                objDescriptor.hasScriptAttribute = true;
+                    this._config.codeEditor.scriptCodeAttribute, 'string');
             }
         } else {
             objDescriptor = {
@@ -180,17 +174,18 @@ define([
         if (description.hasScriptAttribute === false) {
             this._client.notifyUser({
                 severity: 'warn',
-                message: 'Written code will not be stored in model!'
+                message: 'Written code will be stored in an attribute without definition!'
             });
             this._client.notifyUser({
                 severity: 'warn',
                 message: 'Add an attribute "' + this._config.codeEditor.scriptCodeAttribute + '" to a meta-node of ' +
-                'the current node in the Meta editor to enable storing of the code.'
+                'the current node in the Meta editor to avoid meta violations.'
             });
         }
 
         this._setEditable(description.editable);
         this._widget.addNode(description);
+        this._updateWidgetMETAHints();
     };
 
     ICoreControl.prototype._onUpdate = function (gmeId) {
@@ -210,6 +205,22 @@ define([
             clearTimeout(this._widget._autoSaveTimerId);
             this.selectedObjectChanged(activeObjectId);
         }
+    };
+
+    ICoreControl.prototype._updateWidgetMETAHints = function () {
+        var META = {};
+
+        try {
+            this._client.getAllMetaNodes()
+                .forEach(function (node) {
+                    META[node.getFullyQualifiedName()] = node.getId();
+                });
+        } catch (e) {
+            // In case we're switching projects or something like that.
+            this._logger.error(e);
+        }
+
+        this._widget.METAHints = META;
     };
 
     /* * * * * * * * Visualizer life cycle callbacks * * * * * * * */
