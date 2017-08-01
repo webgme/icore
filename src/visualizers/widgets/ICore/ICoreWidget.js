@@ -586,12 +586,16 @@ define([
                 var d = new ConfirmDialog();
 
                 d.show({
-                    title: 'Export to plugin',
+                    title: 'Export to Plugin',
                     iconClass: 'fa fa-download',
-                    question: 'PluginId in generated .js file',
+                    htmlQuestion: $('<div>Will generate &lt;PluginID&gt;.js. Note that this will only export the ' +
+                        '"main" file for the plugin. Unless overwriting an existing plugin you will have to edit the ' +
+                        'gmeConfig and add all necessary files. However it is recommended to first ' +
+                        'generate the boilerplate code using ' +
+                    '<a href="https://github.com/webgme/webgme-cli" target="_blank">webgme-cli</a>.</div>'),
                     input: {
                         label: 'PluginID',
-                        placeHolder: self._config.defaultPluginId || 'Enter pluginId...',
+                        placeHolder: self._config.defaultPluginId || 'Enter PluginID...',
                         required: false,
                         checkFn: function (value) {
                             if (self._config.defaultPluginId && !value) {
