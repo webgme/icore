@@ -300,7 +300,20 @@ define([
 
         this._toolbarItems.push(toolBar.addSeparator());
 
-        
+        this.$btnExportToPlugin = toolBar.addButton({
+            title: 'Export to a plugin',
+            icon: 'fa fa-download',
+            clickFn: function (/*data*/) {
+                self._widget.exportToPlugin();
+            }
+        });
+
+        this._toolbarItems.push(this.$btnExportToPlugin);
+
+        if (WebGMEGlobal.allPlugins.indexOf('PluginGenerator') === -1) {
+            this.$btnExportToPlugin._btn.enabled(false);
+            this.$btnExportToPlugin._btn.prop('title', 'PluginGenerator not available');
+        }
 
         // Load template
         var templateIds = Object.keys(this._config.templates).sort();
@@ -339,8 +352,6 @@ define([
                     function (err, newSettings) {
                         if (err) {
                             self._logger.error(err);
-                        } else {
-                            WebGMEGlobal.userInfo.settings[self._configId] = newSettings;
                         }
                     });
 
@@ -377,11 +388,9 @@ define([
                             verticalOrientation: toggled
                         }
                     },
-                    function (err, newSettings) {
+                    function (err) {
                         if (err) {
                             self._logger.error(err);
-                        } else {
-                            WebGMEGlobal.userInfo.settings[self._configId] = newSettings;
                         }
                     });
 
@@ -409,11 +418,9 @@ define([
                                         logLevel: level
                                     }
                                 },
-                                function (err, newSettings) {
+                                function (err) {
                                     if (err) {
                                         self._logger.error(err);
-                                    } else {
-                                        WebGMEGlobal.userInfo.settings[self._configId] = newSettings;
                                     }
                                 });
 
