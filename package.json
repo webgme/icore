@@ -31,7 +31,7 @@
     "url": "https://github.com/webgme/icore.git"
   },
   "peerDependencies": {
-    "webgme": "^2.0.0"
+    "webgme": "^2.16.0"
   },
   "devDependencies": {
     "jscs": "^3.0.7",
