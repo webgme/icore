@@ -13,8 +13,7 @@ The editor provides code completion for the major webgme APIs and dynamically ge
 webgme import viz ICore webgme-icore
 ```
 
-Once imported and server is restarted, register the visualizer at the nodes where it should be used. If the `'scriptCode'` attribute (configurable) isn't defined, 
-you won't be able to save the code in the model.
+Once imported and server is restarted, register the visualizer at the nodes where it should be used. If the `'scriptCode'` attribute (configurable) isn't defined the model will have meta-violations after saving the code.
 
 ## Running from this repository
 Make sure the [dependencies for webgme](https://github.com/webgme/webgme/blob/master/README.md#dependencies) are installed.
