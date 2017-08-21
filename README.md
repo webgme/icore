@@ -2,6 +2,9 @@
 Code-editor for interacting with models uses the same APIs available from a plugin (the provided context is the main function of a plugin).
 Note that this visualizer uses `eval` to evaluate the code and is recommended to only be used at dev-deployments or at least not at deployments where security is a major concern.
 
+### [View instruction video here!](https://youtu.be/gDvLnR0iDJQ)
+
+
 ![ICore](images/icore_v030.png "ICore in action - [Ctrl + Space] brings up code suggestions for the major GME APIs.")
 
 The editor provides code completion for the major webgme APIs and dynamically generates the current META. To bring up the suggestions hit [Ctrl + Space] (links to the source code documentation are available). For better user-experience do not rename the variables providing the APIs.
