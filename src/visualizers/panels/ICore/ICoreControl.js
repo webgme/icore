@@ -13,6 +13,8 @@ define([
 
     'use strict';
 
+    var YOUTUBE_VIDEO_URL = 'https://youtu.be/gDvLnR0iDJQ';
+
     /**
      * @param {object} options
      * @class
@@ -458,6 +460,17 @@ define([
         this._toolbarItems.push(this.$btnExecute);
 
         this._toolbarItems.push(toolBar.addSeparator());
+
+        // Video help
+        this.$btnHelpVideo = toolBar.addButton({
+            title: 'View instruction video',
+            icon: 'fa fa-question',
+            clickFn: function (/*data*/) {
+                window.open(YOUTUBE_VIDEO_URL, '_blank');
+            }
+        });
+
+        this._toolbarItems.push(this.$btnHelpVideo);
 
         this._toolbarInitialized = true;
     };
