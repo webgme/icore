@@ -131,9 +131,14 @@ define([
                 editable: node.isReadOnly() === false,
                 hasScriptAttribute: true
             };
+
             if (node.getId() !== '') {
-                objDescriptor.hasScriptAttribute = node.isValidAttributeValueOf(
-                    this._config.codeEditor.scriptCodeAttribute, 'string');
+                if (node.getValidAttributeNames().indexOf(this._config.codeEditor.scriptCodeAttribute) > - 1) {
+                    objDescriptor.hasScriptAttribute = node.isValidAttributeValueOf(
+                        this._config.codeEditor.scriptCodeAttribute, 'string');
+                } else {
+                    objDescriptor.hasScriptAttribute = false;
+                }
             }
         } else {
             objDescriptor = {
