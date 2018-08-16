@@ -29,6 +29,13 @@
       "description": "Example showing how to preload and retrieve a map of all nodes in a subtree.",
       "script": "function (callback) {\n  var self = this,\n    activeNode = this.activeNode,\n    core = this.core,\n    logger = this.logger;\n\n  this.loadNodeMap(activeNode)\n    .then(function (nodes) {\n      var path;\n      for (path in nodes) {\n        logger.debug('[', path, '] has name', core.getAttribute(nodes[path], 'name'));\n      }\n\n      logger.info('Total number of nodes in subtree:', Object.keys(nodes).length);\n\n      callback();\n    }).catch(function (err) {\n      self.logger.error(err.stack);\n      callback(err);\n    });\n}",
       "default": false
+    },
+    "pyTest": {
+      "displayName": "Python test",
+      "description": "Example showing how to preload and retrieve a map of all nodes in a subtree.",
+      "script": "just testin\n what we got here\n class",
+      "default": true,
+      "language": "python"
     }
   },
   "consoleWindow": {
@@ -38,7 +45,11 @@
   "codeEditor": {
     "autoSave": false,
     "autoSaveInterval": 2000,
-    "scriptCodeAttribute": "scriptCode"
+    "scriptCodeAttribute": {
+      "javascript": "scriptCode",
+      "python": "pythonCode"
+    },
+    "language": "javascript"
   },
   "defaultPluginId": ""
 }

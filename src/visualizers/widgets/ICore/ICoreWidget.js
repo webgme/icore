@@ -172,20 +172,21 @@ define([
         this._autoSave = config.codeEditor.autoSave;
         this._autoSaveTimerId = null;
         this._templates = config.templates;
-        this._defaultTemplateId = null;
+        this._defaultTemplateIds = {};
         this._verticalSplit = true;
         this._splitterRelPos = 0.5;
 
+        this._language = config.codeEditor.language || 'javascript';
+
         for (templateId in this._templates) {
             if (this._templates[templateId].default) {
-                this._defaultTemplateId = templateId;
-                break;
+                this._defaultTemplateIds[this._templates[templateId].language || 'javascript'] = templateId;
             }
         }
 
-        if (!this._defaultTemplateId) {
-            this._logger.warn('No default template defined!');
-        }
+        // if (!this._defaultTemplateId) {
+        //     this._logger.warn('No default template defined!');
+        // }
 
         this._initialize(config);
 
@@ -196,7 +197,7 @@ define([
         var self = this,
             codeEditorOptions = {
                 value: '',
-                mode: 'javascript',
+                mode: this._language,
                 lineNumbers: true,
                 matchBrackets: true,
                 tabSize: 2,
@@ -457,8 +458,8 @@ define([
     ICoreWidget.prototype.addNode = function (desc) {
         if (typeof desc.scriptCode === 'string') {
             this._codeEditor.setValue(desc.scriptCode);
-        } else if (typeof this._defaultTemplateId === 'string') {
-            this._codeEditor.setValue(this._templates[this._defaultTemplateId].script);
+        } else if (typeof this._defaultTemplateIds[desc.language] === 'string') {
+            this._codeEditor.setValue(this._templates[this._defaultTemplateIds[desc.language]].script);
         } else {
             this._codeEditor.setValue('');
         }
@@ -542,6 +543,11 @@ define([
         this._codeEditor.focus();
     };
 
+    ICoreWidget.prototype.setCodeLanguage = function (lang) {
+        this._language = lang;
+        this._codeEditor.setOption("mode", lang);
+    };
+
     ICoreWidget.prototype.clearConsole = function () {
         this._consoleStr = '';
         this._consoleWindow.setValue(this._consoleStr);
@@ -592,7 +598,7 @@ define([
                         '"main" file for the plugin. Unless overwriting an existing plugin you will have to edit the ' +
                         'gmeConfig and add all necessary files. However it is recommended to first ' +
                         'generate the boilerplate code using ' +
-                    '<a href="https://github.com/webgme/webgme-cli" target="_blank">webgme-cli</a>.</div>'),
+                        '<a href="https://github.com/webgme/webgme-cli" target="_blank">webgme-cli</a>.</div>'),
                     input: {
                         label: 'PluginID',
                         placeHolder: self._config.defaultPluginId || 'Enter PluginID...',
@@ -700,7 +706,7 @@ define([
             });
         } else {
             this._splitterResize.css({
-                width:  this._width,
+                width: this._width,
                 height: 6,
                 top: Math.floor((this._height - 6) * this._splitterResizePos),
                 left: 0

@@ -34,19 +34,21 @@ define([
         this._widget = options.widget;
         this._widget.saveCode = function () {
             var node,
-                editorCode;
+                editorCode,
+                attributeName = self._config.codeEditor
+                    .scriptCodeAttribute[self._config.codeEditor.language || 'javascript'];
 
             if (typeof self._currentNodeId === 'string' && self._isEditable === true) {
                 node = self._client.getNode(self._currentNodeId);
                 editorCode = self._widget.getCode();
 
-                if (node && node.getOwnAttribute(self._config.codeEditor.scriptCodeAttribute) !== editorCode) {
+                if (node && node.getOwnAttribute(attributeName) !== editorCode) {
                     self._client.setAttribute(
                         self._currentNodeId,
-                        self._config.codeEditor.scriptCodeAttribute,
-                        self._widget.getCode(),
+                        attributeName,
+                        editorCode,
                         'ICoreControl updated [' + self._currentNodeId + '] attribute' +
-                        self._config.codeEditor.scriptCodeAttribute + ' with new value.');
+                        attributeName + ' with new value.');
                 }
             }
 
@@ -119,23 +121,29 @@ define([
 
     // This next function retrieves the relevant node information for the widget
     ICoreControl.prototype._getObjectDescriptor = function (nodeId) {
+        console.log(this._config);
         var node = this._client.getNode(nodeId),
-            objDescriptor;
+            objDescriptor,
+            attributeName = this._config.codeEditor
+                .scriptCodeAttribute[this._config.codeEditor.language || 'javascript'];
 
         if (node) {
 
             objDescriptor = {
                 id: node.getId(),
                 name: node.getAttribute('name'),
-                scriptCode: node.getAttribute(this._config.codeEditor.scriptCodeAttribute),
+                scriptCode: node.getAttribute(attributeName),
                 editable: node.isReadOnly() === false,
-                hasScriptAttribute: true
+                hasScriptAttribute: true,
+                attributeName: attributeName,
+                language: this._config.codeEditor.language || 'javascript'
             };
 
             if (node.getId() !== '') {
-                if (node.getValidAttributeNames().indexOf(this._config.codeEditor.scriptCodeAttribute) > - 1) {
+                if (node.getValidAttributeNames().indexOf(attributeName) > -1) {
                     objDescriptor.hasScriptAttribute = node.isValidAttributeValueOf(
-                        this._config.codeEditor.scriptCodeAttribute, 'string');
+                        attributeName, 'string');
+                    // this._config.codeEditor.scriptCodeAttribute, 'string');
                 } else {
                     objDescriptor.hasScriptAttribute = false;
                 }
@@ -185,8 +193,8 @@ define([
             });
             this._client.notifyUser({
                 severity: 'warn',
-                message: 'Add an attribute "' + this._config.codeEditor.scriptCodeAttribute + '" to a meta-node of ' +
-                'the current node in the Meta editor to avoid meta violations.'
+                message: 'Add an attribute "' + description.attributeName + '" to a meta-node of ' +
+                    'the current node in the Meta editor to avoid meta violations.'
             });
         }
 
@@ -439,6 +447,43 @@ define([
         });
 
         this._toolbarItems.push(this.$btnSetLogLevel);
+
+        // Set log-level
+        var codeLangBtn = $('<i class="code-lang-btn">' + self._config.codeEditor.language + '</i>');
+        this.$btnSetCodeLang = toolBar.addDropDownButton({
+            title: 'Script Language',
+            icon: codeLangBtn,
+            menuClass: 'no-min-width',
+            clickFn: function () {
+                self.$btnSetCodeLang.clear();
+                ['javascript', 'python'].forEach(function (lang) {
+                    self.$btnSetCodeLang.addButton({
+                        title: 'Click to select language',
+                        text: lang,
+                        clickFn: function () {
+                            console.log('selected:', lang);
+                            ComponentSettings.updateComponentSettings(self._configId, {
+                                    codeEditor: {
+                                        language: lang
+                                    }
+                                },
+                                function (err) {
+                                    if (err) {
+                                        self._logger.error(err);
+                                    } else {
+                                        self._onLoad(self._currentNodeId);
+                                        self._widget.setCodeLanguage(lang);
+                                    }
+                                });
+
+                            codeLangBtn.text(lang);
+                        }
+                    });
+                });
+            }
+        });
+
+        this._toolbarItems.push(this.$btnSetCodeLang);
 
         // Clear console
         // this.$btnClearConsole = toolBar.addButton({
