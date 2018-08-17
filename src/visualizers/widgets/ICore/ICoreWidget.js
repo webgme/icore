@@ -299,7 +299,9 @@ define([
         $(this._consoleWindow.getWrapperElement()).addClass('console-window');
         this._consoleWindow.setOption('extraKeys', extraKeys);
 
-        this._consoleStr = 'Use the logger to print here (e.g. this.logger.info)';
+
+        this._initConsoleText();
+
         this._logs = [];
 
 
@@ -454,14 +456,31 @@ define([
         return hints;
     };
 
+    ICoreWidget.prototype._initConsoleText = function () {
+        switch (this._language) {
+            case 'javascript':
+                this._consoleStr = 'Use the logger to print here (e.g. this.logger.info)';
+                break;
+            case 'python':
+                this._consoleStr = 'Use the logger to print here (e.g. python specific)';
+                break;
+        }
+    };
+
     // Adding/Removing/Updating items
     ICoreWidget.prototype.addNode = function (desc) {
+        this._codeEditor.setOption('mode', desc.language);
         if (typeof desc.scriptCode === 'string') {
             this._codeEditor.setValue(desc.scriptCode);
         } else if (typeof this._defaultTemplateIds[desc.language] === 'string') {
             this._codeEditor.setValue(this._templates[this._defaultTemplateIds[desc.language]].script);
         } else {
             this._codeEditor.setValue('');
+        }
+
+        if (this._language !== desc.language) {
+            this._language = desc.language;
+            this._initConsoleText();
         }
 
         this._consoleWindow.setValue(this._consoleStr);

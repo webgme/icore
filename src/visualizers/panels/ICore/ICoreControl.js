@@ -29,6 +29,7 @@ define([
         this._client = options.client;
         this._config = options.config;
         this._configId = options.configId;
+        this._language = this._config.codeEditor.language || 'javascript';
 
         // Initialize core collections and variables
         this._widget = options.widget;
@@ -125,7 +126,7 @@ define([
         var node = this._client.getNode(nodeId),
             objDescriptor,
             attributeName = this._config.codeEditor
-                .scriptCodeAttribute[this._config.codeEditor.language || 'javascript'];
+                .scriptCodeAttribute[this._language];
 
         if (node) {
 
@@ -136,7 +137,7 @@ define([
                 editable: node.isReadOnly() === false,
                 hasScriptAttribute: true,
                 attributeName: attributeName,
-                language: this._config.codeEditor.language || 'javascript'
+                language: this._language
             };
 
             if (node.getId() !== '') {
@@ -330,16 +331,29 @@ define([
         }
 
         // Load template
-        var templateIds = Object.keys(this._config.templates).sort();
+        var templateIds = {
+                'javascript': [],
+                'python': []
+            },
+            hasTemplates = false;
 
-        if (templateIds.length > 0) {
+        Object.keys(this._config.templates).forEach(function (templateId) {
+            var templateLanguage = self._config.templates[templateId].language || 'javascript';
+            templateIds[templateLanguage].push(templateId);
+            hasTemplates = true;
+        });
+
+        //TODO sort based on display name
+
+        if (hasTemplates) {
             this.$btnLoadTemplate = toolBar.addDropDownButton({
                 title: 'Load template',
                 icon: 'glyphicon glyphicon-floppy-open',
                 menuClass: 'no-min-width',
                 clickFn: function () {
                     self.$btnLoadTemplate.clear();
-                    templateIds.forEach(function (templateId) {
+                    var tempIds = templateIds[self._language];
+                    tempIds.forEach(function (templateId) {
                         var template = self._config.templates[templateId];
                         self.$btnLoadTemplate.addButton({
                             title: template.description,
@@ -448,7 +462,7 @@ define([
 
         this._toolbarItems.push(this.$btnSetLogLevel);
 
-        // Set log-level
+        // Set language
         var codeLangBtn = $('<i class="code-lang-btn">' + self._config.codeEditor.language + '</i>');
         this.$btnSetCodeLang = toolBar.addDropDownButton({
             title: 'Script Language',
@@ -461,7 +475,6 @@ define([
                         title: 'Click to select language',
                         text: lang,
                         clickFn: function () {
-                            console.log('selected:', lang);
                             ComponentSettings.updateComponentSettings(self._configId, {
                                     codeEditor: {
                                         language: lang
@@ -470,13 +483,11 @@ define([
                                 function (err) {
                                     if (err) {
                                         self._logger.error(err);
-                                    } else {
-                                        self._onLoad(self._currentNodeId);
-                                        self._widget.setCodeLanguage(lang);
                                     }
                                 });
-
                             codeLangBtn.text(lang);
+                            self._language = lang;
+                            self._onLoad(self._currentNodeId);
                         }
                     });
                 });
