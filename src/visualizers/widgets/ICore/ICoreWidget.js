@@ -37,6 +37,14 @@ define([
 
     'use strict';
 
+    function camelCaseArrayToPythonArray(inputStrings) {
+        return inputStrings.map(function (inputString) {
+            return inputString.replace(/([A-Z])/g, function ($1) {
+                return '_' + $1.toLowerCase();
+            });
+        });
+    }
+
     var ICoreWidget,
         WIDGET_CLASS = 'icore-widget',
         LOG_LEVELS = {
@@ -241,7 +249,7 @@ define([
                             if (token.string === '.') {
                                 token = cm.getTokenAt({line: cursor.line, ch: cursor.ch - 1});
                                 if (token.type === 'property' || token.type === 'variable-2' ||
-                                    token.type === 'keyword') {
+                                    token.type === 'keyword' || token.type === 'variable') {
 
                                     hints = self.getHintsForClass(token);
                                 }
@@ -250,7 +258,7 @@ define([
                                 filter = filter.substring(0, filter.length - (token.end - cursor.ch));
                                 token = cm.getTokenAt({line: cursor.line, ch: token.start - 1});
                                 if (token.type === 'property' || token.type === 'variable-2' ||
-                                    token.type === 'keyword') {
+                                    token.type === 'keyword' || token.type === 'variable') {
 
                                     hints = self.getHintsForClass(token, filter);
                                 }
@@ -361,96 +369,119 @@ define([
 
         filter = filter || '';
 
-        switch (token.string) {
-            case 'core':
-                hints = coreHints
-                    .filter(function (name) {
-                        return name.indexOf(filter) === 0;
-                    })
-                    .map(function (name) {
-                        var type = name.indexOf('load') === 0 || CORE_EXTRA_ASYNCS.indexOf(name) > -1 ?
-                            HINT_TYPES.ASYNC : HINT_TYPES.FUNCTION;
+        switch (self._language) {
+            case 'python':
+                switch (token.string) {
+                    case 'core':
+                        hints = camelCaseArrayToPythonArray(coreHints)
+                            .filter(function (name) {
+                                return name.indexOf(filter) === 0;
+                            })
+                            .map(function (name) {
+                                var type = name.indexOf('load') === 0 || CORE_EXTRA_ASYNCS.indexOf(name) > -1 ?
+                                    HINT_TYPES.ASYNC : HINT_TYPES.FUNCTION;
 
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, type, 'Core.html')
-                        };
-                    });
-                break;
-            case 'blobClient':
-                hints = blobHints.filter(function (name) {
-                    return name.indexOf(filter) === 0;
-                })
-                    .map(function (name) {
-                        var type = BLOB_TYPE_MAP[name] ? HINT_TYPES[BLOB_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
-
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, type, 'BlobClient.html')
-                        };
-                    });
-                break;
-            case 'project':
-                hints = projectHints.filter(function (name) {
-                    return name.indexOf(filter) === 0;
-                })
-                    .map(function (name) {
-                        var type = PROJECT_TYPE_MAP[name] ? HINT_TYPES[PROJECT_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
-
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, type, 'ProjectInterface.html')
-                        };
-                    });
-                break;
-            case 'logger':
-                hints = ['debug', 'info', 'warn', 'error']
-                    .filter(function (name) {
-                        return name.indexOf(filter) === 0;
-                    })
-                    .map(function (name) {
-                        var type = HINT_TYPES.FUNCTION;
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, HINT_TYPES.FUNCTION, 'GmeLogger.html')
-                        };
-                    });
-                break;
-            case 'this':
-            case 'self':
-                hints = pluginHints.filter(function (name) {
-                    return name.indexOf(filter) === 0;
-                })
-                    .map(function (name) {
-                        var type = PLUGIN_TYPE_MAP[name] ? HINT_TYPES[PLUGIN_TYPE_MAP[name]] : HINT_TYPES.FUNCTION;
-
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, type, 'PluginBase.html')
-                        };
-                    });
-                break;
-            case 'META':
-                hints = Object.keys(this.METAHints).filter(function (name) {
-                    return name.indexOf(filter) === 0;
-                })
-                    .map(function (name) {
-                        var type = HINT_TYPES.META_NODE;
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, type, self.METAHints[name])
-                        };
-                    });
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'Core.html')
+                                };
+                            });
+                        break;
+                }
                 break;
             default:
-                hints = [];
-                break;
+                switch (token.string) {
+                    case 'core':
+                        hints = coreHints
+                            .filter(function (name) {
+                                return name.indexOf(filter) === 0;
+                            })
+                            .map(function (name) {
+                                var type = name.indexOf('load') === 0 || CORE_EXTRA_ASYNCS.indexOf(name) > -1 ?
+                                    HINT_TYPES.ASYNC : HINT_TYPES.FUNCTION;
+
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'Core.html')
+                                };
+                            });
+                        break;
+                    case 'blobClient':
+                        hints = blobHints.filter(function (name) {
+                            return name.indexOf(filter) === 0;
+                        })
+                            .map(function (name) {
+                                var type = BLOB_TYPE_MAP[name] ? HINT_TYPES[BLOB_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
+
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'BlobClient.html')
+                                };
+                            });
+                        break;
+                    case 'project':
+                        hints = projectHints.filter(function (name) {
+                            return name.indexOf(filter) === 0;
+                        })
+                            .map(function (name) {
+                                var type = PROJECT_TYPE_MAP[name] ? HINT_TYPES[PROJECT_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
+
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'ProjectInterface.html')
+                                };
+                            });
+                        break;
+                    case 'logger':
+                        hints = ['debug', 'info', 'warn', 'error']
+                            .filter(function (name) {
+                                return name.indexOf(filter) === 0;
+                            })
+                            .map(function (name) {
+                                var type = HINT_TYPES.FUNCTION;
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, HINT_TYPES.FUNCTION, 'GmeLogger.html')
+                                };
+                            });
+                        break;
+                    case 'this':
+                    case 'self':
+                        hints = pluginHints.filter(function (name) {
+                            return name.indexOf(filter) === 0;
+                        })
+                            .map(function (name) {
+                                var type = PLUGIN_TYPE_MAP[name] ? HINT_TYPES[PLUGIN_TYPE_MAP[name]] : HINT_TYPES.FUNCTION;
+
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'PluginBase.html')
+                                };
+                            });
+                        break;
+                    case 'META':
+                        hints = Object.keys(this.METAHints).filter(function (name) {
+                            return name.indexOf(filter) === 0;
+                        })
+                            .map(function (name) {
+                                var type = HINT_TYPES.META_NODE;
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, self.METAHints[name])
+                                };
+                            });
+                        break;
+                    default:
+                        hints = [];
+                        break;
+                }
         }
 
         return hints;
