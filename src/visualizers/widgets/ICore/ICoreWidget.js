@@ -378,13 +378,26 @@ define([
                                 return name.indexOf(filter) === 0;
                             })
                             .map(function (name) {
-                                var type = name.indexOf('load') === 0 || CORE_EXTRA_ASYNCS.indexOf(name) > -1 ?
-                                    HINT_TYPES.ASYNC : HINT_TYPES.FUNCTION;
+                                var type = HINT_TYPES.FUNCTION;
 
                                 return {
                                     text: getCompletionText(name, filter, type),
                                     className: 'icore-hint',
                                     render: getRenderFunction(name, type, 'Core.html')
+                                };
+                            });
+                        break;
+                    case 'logger':
+                        hints = ['debug', 'info', 'warn', 'error']
+                            .filter(function (name) {
+                                return name.indexOf(filter) === 0;
+                            })
+                            .map(function (name) {
+                                var type = HINT_TYPES.FUNCTION;
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, HINT_TYPES.FUNCTION, 'GmeLogger.html')
                                 };
                             });
                         break;
