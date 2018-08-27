@@ -31,7 +31,7 @@
     "url": "https://github.com/webgme/icore.git"
   },
   "peerDependencies": {
-    "webgme": "^2.16.0"
+    "webgme": "https://github.com/webgme/webgme#engine-2-21-1"
   },
   "devDependencies": {
     "jscs": "^3.0.7",
@@ -41,6 +41,7 @@
     "chai": "^3.0.0"
   },
   "dependencies": {
-    "webgme": "^2.29.0"
+    "webgme": "git+https://github.com/webgme/webgme.git#engine-2-21-1",
+    "webgme-bindings": "git+https://github.com/webgme/bindings.git#master"
   }
 }

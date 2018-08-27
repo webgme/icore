@@ -15,6 +15,23 @@ define([
 
     var YOUTUBE_VIDEO_URL = 'https://youtu.be/gDvLnR0iDJQ';
 
+    function overrideNotificationFunction(data) {
+        var notification = {
+            severity: data.notification.severity || 'info',
+            message: '[Plugin] ' + data.pluginName + ' - ' + data.notification.message
+        };
+
+        if (typeof data.notification.progress === 'number') {
+            notification.message += ' [' + data.notification.progress + '%]';
+        }
+
+        if (data.pluginName !== 'PyCoreExecutor') {
+            this.dispatchEvent(this.CONSTANTS.NOTIFICATION, notification);
+        }
+
+        this.dispatchEvent(this.CONSTANTS.PLUGIN_NOTIFICATION, data);
+    }
+
     /**
      * @param {object} options
      * @class
@@ -26,7 +43,10 @@ define([
         var self = this;
         this._logger = options.logger.fork('Control');
 
+        this._pythonNotification = this._pythonNotification.bind(self);
         this._client = options.client;
+
+        this._client.dispatchPluginNotification = overrideNotificationFunction;
         this._config = options.config;
         this._configId = options.configId;
         this._language = this._config.codeEditor.language || 'javascript';
@@ -68,16 +88,27 @@ define([
         };
 
         this._widget.executeCode = function () {
-            self._widget.clearConsole();
-            self.evaluateCode(function (err) {
-                if (err) {
-                    self._widget.addConsoleMessage('error', ['Execution failed with error:', err.stack]);
-                } else {
-                    self._widget.addConsoleMessage('info', ['Execution finished!']);
-                }
+            switch (self._language) {
+                case 'python':
+                    var context = self._client.getCurrentPluginContext('PyCoreExecutor');
+                    context.pluginConfig = {script: self._widget.getCode()};
+                    self._client.runServerPlugin('PyCoreExecutor', context, function (err, pluginResult) {
+                        self._logger.info(err);
+                        self._logger.info(pluginResult);
+                    });
+                    break;
+                default:
+                    self._widget.clearConsole();
+                    self.evaluateCode(function (err) {
+                        if (err) {
+                            self._widget.addConsoleMessage('error', ['Execution failed with error:', err.stack]);
+                        } else {
+                            self._widget.addConsoleMessage('info', ['Execution finished!']);
+                        }
 
-                self._widget._codeEditor.focus();
-            });
+                        self._widget._codeEditor.focus();
+                    });
+            }
         };
 
         this._currentNodeId = null;
@@ -122,7 +153,6 @@ define([
 
     // This next function retrieves the relevant node information for the widget
     ICoreControl.prototype._getObjectDescriptor = function (nodeId) {
-        console.log(this._config);
         var node = this._client.getNode(nodeId),
             objDescriptor,
             attributeName = this._config.codeEditor
@@ -245,9 +275,20 @@ define([
         this._removeToolbarItems();
     };
 
+    ICoreControl.prototype._pythonNotification = function (__client, eventData) {
+        if (this._language === 'python') {
+            console.log(eventData);
+            this._widget.addConsoleMessage(eventData.notification.severity || 'info',
+                [eventData.notification.message]);
+        }
+    };
+
     ICoreControl.prototype._attachClientEventListeners = function () {
+        var self = this;
+
         this._detachClientEventListeners();
         WebGMEGlobal.State.on('change:' + CONSTANTS.STATE_ACTIVE_OBJECT, this._stateActiveObjectChanged, this);
+        this._client.addEventListener(CONSTANTS.CLIENT.PLUGIN_NOTIFICATION, this._pythonNotification);
     };
 
     ICoreControl.prototype._detachClientEventListeners = function () {

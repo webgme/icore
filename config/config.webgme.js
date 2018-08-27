@@ -7,6 +7,7 @@ var config = require('webgme/config/config.default'),
     validateConfig = require('webgme/config/validator');
 
 // The paths can be loaded from the webgme-setup.json
+config.plugin.basePaths.push(__dirname + '/../src/plugins');
 
 
 
@@ -20,10 +21,11 @@ config.visualization.visualizerDescriptors.push(__dirname + '/../src/visualizers
 // Add requirejs paths
 config.requirejsPaths = {
   'panels': './src/visualizers/panels',
-  'widgets': './src/visualizers/widgets'
+  'widgets': './src/visualizers/widgets',
+  'webgme-icore': './src/common'
 };
 
 
-config.mongo.uri = 'mongodb://127.0.0.1:27017/icore';
+config.mongo.uri = 'mongodb://127.0.0.1:27017/webgme_icore';
 validateConfig(config);
 module.exports = config;

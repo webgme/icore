@@ -1,0 +1,24 @@
+{
+  "id": "PyCoreExecutor",
+  "name": "PyCoreExecutor",
+  "version": "0.1.0",
+  "description": "",
+  "icon": {
+    "class": "glyphicon glyphicon-cog",
+    "src": ""
+  },
+  "disableServerSideExecution": false,
+  "disableBrowserSideExecution": true,
+  "dependencies": [],
+  "writeAccessRequired": false,
+  "configStructure": [
+    {
+      "name": "script",
+      "displayName": "Plugin script",
+      "description": "The content of the plugin to be executed",
+      "value": "",
+      "valueType": "string",
+      "readOnly": false
+    }
+  ]
+}
