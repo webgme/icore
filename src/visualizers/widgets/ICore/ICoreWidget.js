@@ -276,6 +276,12 @@ define([
         this._codeEditor = codeMirror(this._el[0], codeEditorOptions);
         $(this._codeEditor.getWrapperElement()).addClass('code-editor');
 
+        this._codeEditor.on('beforeChange', function (cm, change) {
+            if (change.origin !== 'setValue' && change.from.line < 2 && self._language === 'python') {
+                change.cancel();
+            }
+        });
+
         this._codeEditor.on('change', function (cm, event) {
             if (event.origin !== 'setValue') {
                 if (self._autoSave) {
@@ -514,6 +520,7 @@ define([
     // Adding/Removing/Updating items
     ICoreWidget.prototype.addNode = function (desc) {
         this._codeEditor.setOption('mode', desc.language);
+
         if (typeof desc.scriptCode === 'string') {
             this._codeEditor.setValue(desc.scriptCode);
         } else if (typeof this._defaultTemplateIds[desc.language] === 'string') {
@@ -528,6 +535,15 @@ define([
         }
 
         this._consoleWindow.setValue(this._consoleStr);
+
+        if (desc.language === 'python') {
+            this._codeEditor.addLineClass(0, 'background', 'python-greyed');
+            this._codeEditor.addLineClass(1, 'background', 'python-greyed');
+        } else {
+            this._codeEditor.removeLineClass(0, 'background', 'python-greyed');
+            this._codeEditor.removeLineClass(1, 'background', 'python-greyed');
+        }
+
         this._consoleWindow.refresh();
         this._codeEditor.refresh();
     };

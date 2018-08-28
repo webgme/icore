@@ -1,6 +1,10 @@
 /**
  * This file is for any scss that you may want for this visualizer.
  */
+.python-greyed {
+  background-color: #cdcdcd
+}
+
 .icore-widget {
   outline: none;
   padding: 2px; }

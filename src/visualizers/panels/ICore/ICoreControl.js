@@ -57,7 +57,7 @@ define([
             var node,
                 editorCode,
                 attributeName = self._config.codeEditor
-                    .scriptCodeAttribute[self._config.codeEditor.language || 'javascript'];
+                    .scriptCodeAttribute[self._language || 'javascript'];
 
             if (typeof self._currentNodeId === 'string' && self._isEditable === true) {
                 node = self._client.getNode(self._currentNodeId);

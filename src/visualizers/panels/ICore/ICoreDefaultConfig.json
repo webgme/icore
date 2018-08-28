@@ -36,6 +36,13 @@
       "script": "just testin\n what we got here\n class",
       "default": true,
       "language": "python"
+    },
+    "pyMeta":{
+      "displayName":"Meta nodes",
+      "description": "Example showing how to get info about the meta-model.",
+      "script":"class PythonPlugin(PluginBase):\n  def main(self):\n    core = self.core\n    root_node = self.root_node\n    active_node = self.active_node\n    logger = self.logger\n    path_2_meta_node = core.get_all_meta_nodes(active_node)\n\n    for meta_name in self.META:\n      logger.info('====== {0} ======'.format(meta_name))\n      meta_node = self.META[meta_name]\n      logger.info('name {0}'.format(core.get_attribute(meta_node, 'name')))\n      logger.info('path {0}'.format(core.get_path(meta_node)))\n      base_node = core.get_base(meta_node)\n      if base_node:\n        logger.info('base {0} [{1}]'.format(core.get_attribute(base_node, 'name'), core.get_path(base_node)))\n      else:\n        logger.info('base None')\n\n      logger.info('definition {0}'.format(core.get_json_meta(meta_node)))\n",
+      "default": false,
+      "language": "python"
     }
   },
   "consoleWindow": {
