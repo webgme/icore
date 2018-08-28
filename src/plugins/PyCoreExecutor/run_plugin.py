@@ -9,6 +9,7 @@ Notes:
 
 import sys
 import logging
+
 from webgme_bindings import WebGME
 from PyCoreExecutor import PyCoreExecutor
 
@@ -37,7 +38,8 @@ logger.debug('active-selection-paths: {0}'.format(ACTIVE_SELECTION_PATHS))
 logger.debug('name-space: {0}'.format(NAMESPACE))
 
 # Create an instance of WebGME and the plugin
-webgme = WebGME(PORT, logger)
+webgme = WebGME(PORT)
+
 plugin = PyCoreExecutor(webgme, COMMIT_HASH, BRANCH_NAME, ACTIVE_NODE_PATH, ACTIVE_SELECTION_PATHS, NAMESPACE)
 
 # Do the work

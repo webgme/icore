@@ -88,6 +88,7 @@ define([
         };
 
         this._widget.executeCode = function () {
+            self._widget.clearConsole();
             switch (self._language) {
                 case 'python':
                     var context = self._client.getCurrentPluginContext('PyCoreExecutor');
@@ -98,7 +99,6 @@ define([
                     });
                     break;
                 default:
-                    self._widget.clearConsole();
                     self.evaluateCode(function (err) {
                         if (err) {
                             self._widget.addConsoleMessage('error', ['Execution failed with error:', err.stack]);
@@ -277,14 +277,12 @@ define([
 
     ICoreControl.prototype._pythonNotification = function (__client, eventData) {
         if (this._language === 'python') {
-            console.log(eventData);
             this._widget.addConsoleMessage(eventData.notification.severity || 'info',
                 [eventData.notification.message]);
         }
     };
 
     ICoreControl.prototype._attachClientEventListeners = function () {
-        var self = this;
 
         this._detachClientEventListeners();
         WebGMEGlobal.State.on('change:' + CONSTANTS.STATE_ACTIVE_OBJECT, this._stateActiveObjectChanged, this);
@@ -293,6 +291,7 @@ define([
 
     ICoreControl.prototype._detachClientEventListeners = function () {
         WebGMEGlobal.State.off('change:' + CONSTANTS.STATE_ACTIVE_OBJECT, this._stateActiveObjectChanged);
+        this._client.removeEventListener(CONSTANTS.CLIENT.PLUGIN_NOTIFICATION, this._pythonNotification);
     };
 
     ICoreControl.prototype.onActivate = function () {
