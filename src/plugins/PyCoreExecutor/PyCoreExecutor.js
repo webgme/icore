@@ -65,8 +65,7 @@ define([
         const CoreZMQ = require('webgme-bindings').CoreZMQ;
         const cp = require('child_process');
         const logger = this.logger;
-        var console = '',
-            self = this;
+        var self = this;
 
         const callScript = (program, scriptPath, port) => {
             let deferred = Q.defer(),
@@ -84,9 +83,8 @@ define([
             const childProc = cp.spawn(program, args, options);
 
             childProc.stdout.on('data', data => {
-                logger.info(data.toString());
-                // logger.debug(data.toString());
-                console += data.toString();
+                // logger.info(data.toString());
+                logger.debug(data.toString());
             });
 
             childProc.stderr.on('data', data => {
@@ -98,7 +96,6 @@ define([
                     deferred.reject(new Error(`${program} ${args.join(' ')} exited with code ${code}.`));
                 } else {
                     deferred.resolve();
-                    self.result.addMessage(new PluginMessage({severity: 'info', message: console}));
                 }
             });
 

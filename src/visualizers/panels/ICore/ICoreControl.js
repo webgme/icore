@@ -8,8 +8,15 @@ define([
     'js/Constants',
     './ICorePluginEvaluator',
     'js/Toolbar/ToolbarDropDownButton',
-    'js/Utils/ComponentSettings'
-], function (CONSTANTS, ICorePluginEvaluator, ToolbarDropDownButton, ComponentSettings) {
+    'js/Utils/ComponentSettings',
+    'js/Dialogs/PluginResults/PluginResultsDialog',
+    'plugin/PluginResult'
+], function (CONSTANTS,
+             ICorePluginEvaluator,
+             ToolbarDropDownButton,
+             ComponentSettings,
+             PluginResultsDialog,
+             PluginResult) {
 
     'use strict';
 
@@ -91,11 +98,20 @@ define([
             self._widget.clearConsole();
             switch (self._language) {
                 case 'python':
-                    var context = self._client.getCurrentPluginContext('PyCoreExecutor');
+                    var context = self._client.getCurrentPluginContext('PyCoreExecutor'),
+                        dialog;
+
                     context.pluginConfig = {script: self._widget.getCode()};
                     self._client.runServerPlugin('PyCoreExecutor', context, function (err, pluginResult) {
                         self._logger.info(err);
                         self._logger.info(pluginResult);
+
+                        if (pluginResult && pluginResult.artifacts && pluginResult.messages && (pluginResult.artifacts.length || pluginResult.messages.length)) {
+                            //we have something to show
+                            pluginResult = new PluginResult(pluginResult);
+                            dialog = new PluginResultsDialog();
+                            dialog.show(self._client, [pluginResult]);
+                        }
                     });
                     break;
                 default:

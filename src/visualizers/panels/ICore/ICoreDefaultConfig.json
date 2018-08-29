@@ -37,10 +37,10 @@
       "default": true,
       "language": "python"
     },
-    "pyMeta":{
-      "displayName":"Meta nodes",
+    "pyMeta": {
+      "displayName": "Meta nodes",
       "description": "Example showing how to get info about the meta-model.",
-      "script":"class PythonPlugin(PluginBase):\n    def main(self):\n        core = self.core\n        root_node = self.root_node\n        active_node = self.active_node\n        logger = self.logger\n        path_2_meta_node = core.get_all_meta_nodes(active_node)\n        for meta_name in self.META:\n          logger.info('====== {0} ======'.format(meta_name))\n          meta_node = self.META[meta_name]\n          logger.info('name {0}'.format(core.get_attribute(meta_node, 'name')))\n          logger.info('path {0}'.format(core.get_path(meta_node)))\n          base_node = core.get_base(meta_node)\n          if base_node:\n            logger.info('base {0} [{1}]'.format(core.get_attribute(base_node, 'name'), core.get_path(base_node)))\n          else:\n            logger.info('base None')\n          logger.debug('Defines meta definitions: {0}'.format(core.get_own_json_meta(meta_node)))\n          meta_json = core.get_json_meta(meta_node)\n          logger.info('Resolved meta definitions: {0}'.format(meta_json))\n          if len(meta_json['children']['items']) > 0:\n            msg = 'Can contain (and their derived types): '\n            for child_path in meta_json['children']['items']:\n              child_type = path_2_meta_node[child_path]\n              if child_type:\n                msg += '\"{0}\"'.format(core.get_attribute(child_type, 'name'))\n              else:\n                msg += '[{0}]'.format(child_path)\n            logger.info(msg)\n",
+      "script": "class PythonPlugin(PluginBase):\n    def main(self):\n        core = self.core\n        root_node = self.root_node\n        active_node = self.active_node\n        logger = self.logger\n        path_2_meta_node = core.get_all_meta_nodes(active_node)\n        for meta_name in self.META:\n          logger.info('====== {0} ======'.format(meta_name))\n          meta_node = self.META[meta_name]\n          logger.info('name {0}'.format(core.get_attribute(meta_node, 'name')))\n          logger.info('path {0}'.format(core.get_path(meta_node)))\n          base_node = core.get_base(meta_node)\n          if base_node:\n            logger.info('base {0} [{1}]'.format(core.get_attribute(base_node, 'name'), core.get_path(base_node)))\n          else:\n            logger.info('base None')\n          logger.debug('Defines meta definitions: {0}'.format(core.get_own_json_meta(meta_node)))\n          meta_json = core.get_json_meta(meta_node)\n          logger.info('Resolved meta definitions: {0}'.format(meta_json))\n          if len(meta_json['children']['items']) > 0:\n            msg = 'Can contain (and their derived types): '\n            for child_path in meta_json['children']['items']:\n              child_type = path_2_meta_node[child_path]\n              if child_type:\n                msg += '\"{0}\"'.format(core.get_attribute(child_type, 'name'))\n              else:\n                msg += '[{0}]'.format(child_path)\n            logger.info(msg)\n",
       "default": false,
       "language": "python"
     },
@@ -48,6 +48,20 @@
       "displayName": "Preload nodes",
       "description": "Example showing how to preload and retrieve a map of all nodes in a subtree.",
       "script": "class PythonPlugin(PluginBase):\n  def main(self):\n    active_node = self.active_node\n    core = self.core\n    logger = self.logger\n    nodes = core.load_sub_tree(active_node)\n    for node in nodes:\n      logger.debug('[{0}] has name: {1}'.format(core.get_path(node),core.get_attribute(node,'name')))\n    logger.info('Total number of nodes in the subtree: {0}'.format(len(nodes)))\n",
+      "default": false,
+      "language": "python"
+    },
+    "pyCoreTraverse": {
+      "displayName": "Traverse Model",
+      "description": "Illustrates how to use core.traverse to visit each node in a sub-tree.",
+      "script": "class PythonPlugin(PluginBase):\n  def main(self):\n    active_node = self.active_node\n    core = self.core\n    logger = self.logger\n\n    def traverse(node):\n      meta_node = core.get_base_type(node)\n      name = core.get_attribute(node,'name')\n      path = core.get_path(node)\n      meta_type = 'undefined'\n      if meta_node:\n        meta_type = core.get_attribute(meta_node,'name')\n      logger.info('[{0}] - {1} is of type \"{2}\"'.format(path,name,meta_type))\n\n    self.util.traverse(active_node,traverse)\n",
+      "default": false,
+      "language": "python"
+    },
+    "pyBlobClient": {
+      "displayName": "BlobClient - store and return files",
+      "description": "Illustrates how to use the blob-client and link to the artifacts in the result.",
+      "script": "class PythonPlugin(PluginBase):\n  def main(self):\n    active_node = self.active_node\n    core = self.core\n    logger = self.logger\n    # Saves multiple files and bundles them and attahces to the result\n    artifact_hash = self.add_artifact('MyArtifact',{'hello.txt': 'Hello world!','dir/hello2.txt': 'Hello from folder!'})\n    logger.info('The artifact is stored under has: {0}'.format(artifact_hash))\n\n    # Saves a single text file and attaches to the result\n    file_hash = self.add_file('myFile.txt','Hello again!')\n    logger.info('The file is stored under has: {0}'.format(file_hash))\n",
       "default": false,
       "language": "python"
     }
