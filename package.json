@@ -41,6 +41,7 @@
     "chai": "^3.0.0"
   },
   "dependencies": {
+    "webgme": "^2.30.0",
     "webgme-bindings": "github:webgme/bindings"
   }
 }

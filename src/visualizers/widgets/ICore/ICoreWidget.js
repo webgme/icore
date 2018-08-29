@@ -330,6 +330,7 @@ define([
             return function (el/*, cm, data*/) {
                 var $el = $(el),
                     anchor = $('<a target="_blank"/>'),
+                    hasAnchor = true,
                     url;
 
                 if (type === HINT_TYPES.META_NODE) {
@@ -345,10 +346,25 @@ define([
                     anchor.attr('href', url);
                 } else {
                     anchor.prop('title', 'View docs');
-                    anchor.attr('href', 'docs/source/' + path + '#' + name + '__anchor');
+                    switch (self._language) {
+                        case 'python':
+                            // anchor.attr('href', 'docs/source/' + path + '#' + name + '__anchor');
+                            anchor.attr('href', 'bindings-docs/python/_static/' + path +
+                                '#webgme_bindings.' + path.replace('.html', '').toLowerCase() + '.' +
+                                path.replace('.html', '') + '.' + name);
+
+                            if (path.toLowerCase().indexOf('logger') !== -1) {
+                                hasAnchor = false;
+                            }
+                            break;
+                        default:
+                            anchor.attr('href', 'docs/source/' + path + '#' + name + '__anchor');
+                    }
                 }
 
-                anchor.append($('<i class="glyphicon glyphicon-share"/>'));
+                if (hasAnchor) {
+                    anchor.append($('<i class="glyphicon glyphicon-share"/>'));
+                }
 
                 $el.append($('<span>', {
                     class: 'circle ' + type.class,
