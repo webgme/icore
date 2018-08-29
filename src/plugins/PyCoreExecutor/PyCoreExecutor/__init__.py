@@ -28,10 +28,8 @@ class NotificationLogger(object):
         self._send({'severity':'warn','message':msg})
 
 class PyCoreExecutor(PluginBase):
-    def main(self):
+    def main(self, active_selection):
         core = self.core
-        root_node = self.root_node
-        active_node = self.active_node
         config = self.get_current_config()
         scope = {'PluginBase': PluginBase}
 
@@ -40,12 +38,6 @@ class PyCoreExecutor(PluginBase):
         else:
             exec(config['script'])
             scope['PythonPlugin'] = PythonPlugin
-
-        active_selection = [];
-        if self.active_selection is not None:
-                    for as_path in self.active_selection:
-                        active_selection.append(core.get_path(as_path))
-
 
         plugin = scope['PythonPlugin'](self._webgme, self.commit_hash, self.branch_name, core.get_path(active_node), active_selection, self.namespace)
         NotificationLogger(plugin)

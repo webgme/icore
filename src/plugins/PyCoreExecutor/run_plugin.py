@@ -43,7 +43,7 @@ webgme = WebGME(PORT)
 plugin = PyCoreExecutor(webgme, COMMIT_HASH, BRANCH_NAME, ACTIVE_NODE_PATH, ACTIVE_SELECTION_PATHS, NAMESPACE)
 
 # Do the work
-plugin.main()
+plugin.main(ACTIVE_SELECTION_PATHS)
 
 # Finally disconnect from the zmq-server
 webgme.disconnect()
