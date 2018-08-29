@@ -10,13 +10,15 @@ define([
     'js/Toolbar/ToolbarDropDownButton',
     'js/Utils/ComponentSettings',
     'js/Dialogs/PluginResults/PluginResultsDialog',
-    'plugin/PluginResult'
+    'plugin/PluginResult',
+    'js/Loader/LoaderCircles'
 ], function (CONSTANTS,
              ICorePluginEvaluator,
              ToolbarDropDownButton,
              ComponentSettings,
              PluginResultsDialog,
-             PluginResult) {
+             PluginResult,
+             LoaderCircles) {
 
     'use strict';
 
@@ -58,6 +60,9 @@ define([
         this._configId = options.configId;
         this._language = this._config.codeEditor.language || 'javascript';
 
+        this._pythonExecutionAllowed = WebGMEGlobal.gmeConfig.plugin.allowServerExecution === true &&
+            WebGMEGlobal.allPlugins.indexOf('PyCoreExecutor') !== -1;
+
         // Initialize core collections and variables
         this._widget = options.widget;
         this._widget.saveCode = function () {
@@ -96,6 +101,8 @@ define([
 
         this._widget.executeCode = function () {
             self._widget.clearConsole();
+            self._btnExecuteLoader.start();
+            self.$btnExecute._btn.enabled(false);
             switch (self._language) {
                 case 'python':
                     var context = self._client.getCurrentPluginContext('PyCoreExecutor'),
@@ -105,6 +112,8 @@ define([
                     self._client.runServerPlugin('PyCoreExecutor', context, function (err, pluginResult) {
                         self._logger.info(err);
                         self._logger.info(pluginResult);
+                        self._btnExecuteLoader.stop();
+                        self.$btnExecute._btn.enabled(true);
 
                         if (pluginResult && pluginResult.artifacts && pluginResult.messages && (pluginResult.artifacts.length || pluginResult.messages.length)) {
                             //we have something to show
@@ -122,6 +131,8 @@ define([
                             self._widget.addConsoleMessage('info', ['Execution finished!']);
                         }
 
+                        self._btnExecuteLoader.stop();
+                        self.$btnExecute._btn.enabled(true);
                         self._widget._codeEditor.focus();
                     });
             }
@@ -130,6 +141,7 @@ define([
         this._currentNodeId = null;
         this._isEditable = true;
 
+        this._btnExecuteLoader = null;
         this._logger.debug('ctor finished');
     }
 
@@ -247,6 +259,11 @@ define([
 
         this._setEditable(description.editable);
         this._widget.addNode(description);
+        if (this._language === 'python' && this._pythonExecutionAllowed !== true) {
+            this.$btnExecute._btn.enabled(false);
+        } else {
+            this.$btnExecute._btn.enabled(true);
+        }
         this._updateWidgetMETAHints();
     };
 
@@ -573,6 +590,9 @@ define([
                 self._widget.executeCode();
             }
         });
+
+        this._btnExecuteLoader = new LoaderCircles({containerElement: this.$btnExecute.el.find('.glyphicon')});
+        this._btnExecuteLoader.setSize(20);
 
         this._toolbarItems.push(this.$btnExecute);
 

@@ -345,7 +345,7 @@ define([
                     anchor.attr('href', url);
                 } else {
                     anchor.prop('title', 'View docs');
-                    anchor.attr('href', '/docs/source/' + path + '#' + name + '__anchor');
+                    anchor.attr('href', 'docs/source/' + path + '#' + name + '__anchor');
                 }
 
                 anchor.append($('<i class="glyphicon glyphicon-share"/>'));
