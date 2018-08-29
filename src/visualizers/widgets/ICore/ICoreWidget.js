@@ -666,73 +666,138 @@ define([
     ICoreWidget.prototype.exportToPlugin = function () {
         var self = this;
 
-        requirejs(['text!plugin/PluginGenerator/PluginGenerator/Templates/plugin.js.ejs'],
-            function (template) {
-                var d = new ConfirmDialog();
+        switch (self._language) {
+            case 'python':
+                requirejs(['text!plugin/PluginGenerator/PluginGenerator/__init___py.ejs'],
+                    function (template) {
+                        var d = new ConfirmDialog(),
+                            code = self.getCode();
 
-                d.show({
-                    title: 'Export to Plugin',
-                    iconClass: 'fa fa-download',
-                    htmlQuestion: $('<div>Will generate &lt;PluginID&gt;.js. Note that this will only export the ' +
-                        '"main" file for the plugin. Unless overwriting an existing plugin you will have to edit the ' +
-                        'gmeConfig and add all necessary files. However it is recommended to first ' +
-                        'generate the boilerplate code using ' +
-                        '<a href="https://github.com/webgme/webgme-cli" target="_blank">webgme-cli</a>.</div>'),
-                    input: {
-                        label: 'PluginID',
-                        placeHolder: self._config.defaultPluginId || 'Enter PluginID...',
-                        required: false,
-                        checkFn: function (value) {
-                            if (self._config.defaultPluginId && !value) {
-                                return true;
+                        d.show({
+                            title: 'Export to Plugin',
+                            iconClass: 'fa fa-download',
+                            htmlQuestion: $('<div>Will generate __init__.py. Note that this will only export the ' +
+                                '"main" file for the plugin. Unless overwriting an existing plugin you will have to edit the ' +
+                                'gmeConfig and add all necessary files. However it is recommended to first ' +
+                                'generate the boilerplate code using ' +
+                                '<a href="https://github.com/webgme/webgme-cli" target="_blank">webgme-cli</a>.</div>'),
+                            input: {
+                                label: 'PluginID',
+                                placeHolder: self._config.defaultPluginId || 'Enter PluginID...',
+                                required: false,
+                                checkFn: function (value) {
+                                    if (self._config.defaultPluginId && !value) {
+                                        return true;
+                                    }
+
+                                    return /^(?!(?:do|if|in|for|let|new|try|var|case|else|enum|eval|false|null|this|true|void|with|break|catch|class|const|super|throw|while|yield|delete|export|import|public|return|static|switch|typeof|default|extends|finally|package|private|continue|debugger|function|arguments|interface|protected|implements|instanceof)$)[a-zA-Z_$][0-9a-zA-Z_$]*/.test(value);
+                                }
+                            },
+                            severity: 'info'
+                        }, function (_dummy, enteredName) {
+
+                            if (self._config.defaultPluginId && !enteredName) {
+                                enteredName = self._config.defaultPluginId;
+                            } else {
+                                // There was a new name entered store it in user settings.
+
+                                ComponentSettings.updateComponentSettings(self._configId, {defaultPluginId: enteredName},
+                                    function (err) {
+                                        if (err) {
+                                            self._logger.error(err);
+                                        } else {
+                                            self._config.defaultPluginId = enteredName;
+                                        }
+                                    });
                             }
 
-                            return /^(?!(?:do|if|in|for|let|new|try|var|case|else|enum|eval|false|null|this|true|void|with|break|catch|class|const|super|throw|while|yield|delete|export|import|public|return|static|switch|typeof|default|extends|finally|package|private|continue|debugger|function|arguments|interface|protected|implements|instanceof)$)[a-zA-Z_$][0-9a-zA-Z_$]*/.test(value);
-                        }
-                    },
-                    severity: 'info'
-                }, function (_dummy, enteredName) {
-
-                    if (self._config.defaultPluginId && !enteredName) {
-                        enteredName = self._config.defaultPluginId;
-                    } else {
-                        // There was a new name entered store it in user settings.
-
-                        ComponentSettings.updateComponentSettings(self._configId, {defaultPluginId: enteredName},
-                            function (err) {
-                                if (err) {
-                                    self._logger.error(err);
-                                } else {
-                                    self._config.defaultPluginId = enteredName;
-                                }
+                            code = code.replace(/PythonPlugin/g, enteredName);
+                            var pluginPy = ejs.render(template, {
+                                // PluginGenerator config as of webgme v2.16.0
+                                // The rendering of the template throws if any is missing!
+                                pluginID: enteredName,
+                                classImpl: code
                             });
+
+                            saveToDisk.downloadTextAsFile('__init__.py', pluginPy);
+                        });
+
+
+                    },
+                    function (err) {
+                        self._logger.error('Could not load plugin template for export', err);
                     }
+                );
+                break;
+            default:
+                requirejs(['text!plugin/PluginGenerator/PluginGenerator/plugin_js.ejs'],
+                    function (template) {
+                        var d = new ConfirmDialog();
 
-                    var pluginJs = ejs.render(template, {
-                        // PluginGenerator config as of webgme v2.16.0
-                        // The rendering of the template throws if any is missing!
-                        main: self.getCode(),
-                        pluginID: enteredName,
-                        pluginName: '',
-                        description: '',
-                        test: false,
-                        templateType: '',
-                        configStructure: false,
-                        meta: false,
-                        version: '2.16.0',
-                        date: new Date()
-                    });
+                        d.show({
+                            title: 'Export to Plugin',
+                            iconClass: 'fa fa-download',
+                            htmlQuestion: $('<div>Will generate &lt;PluginID&gt;.js. Note that this will only export the ' +
+                                '"main" file for the plugin. Unless overwriting an existing plugin you will have to edit the ' +
+                                'gmeConfig and add all necessary files. However it is recommended to first ' +
+                                'generate the boilerplate code using ' +
+                                '<a href="https://github.com/webgme/webgme-cli" target="_blank">webgme-cli</a>.</div>'),
+                            input: {
+                                label: 'PluginID',
+                                placeHolder: self._config.defaultPluginId || 'Enter PluginID...',
+                                required: false,
+                                checkFn: function (value) {
+                                    if (self._config.defaultPluginId && !value) {
+                                        return true;
+                                    }
 
-                    console.log(pluginJs);
-                    saveToDisk.downloadTextAsFile(enteredName + '.js', pluginJs);
-                });
+                                    return /^(?!(?:do|if|in|for|let|new|try|var|case|else|enum|eval|false|null|this|true|void|with|break|catch|class|const|super|throw|while|yield|delete|export|import|public|return|static|switch|typeof|default|extends|finally|package|private|continue|debugger|function|arguments|interface|protected|implements|instanceof)$)[a-zA-Z_$][0-9a-zA-Z_$]*/.test(value);
+                                }
+                            },
+                            severity: 'info'
+                        }, function (_dummy, enteredName) {
+
+                            if (self._config.defaultPluginId && !enteredName) {
+                                enteredName = self._config.defaultPluginId;
+                            } else {
+                                // There was a new name entered store it in user settings.
+
+                                ComponentSettings.updateComponentSettings(self._configId, {defaultPluginId: enteredName},
+                                    function (err) {
+                                        if (err) {
+                                            self._logger.error(err);
+                                        } else {
+                                            self._config.defaultPluginId = enteredName;
+                                        }
+                                    });
+                            }
+
+                            var pluginJs = ejs.render(template, {
+                                // PluginGenerator config as of webgme v2.16.0
+                                // The rendering of the template throws if any is missing!
+                                main: self.getCode(),
+                                pluginID: enteredName,
+                                pluginName: '',
+                                description: '',
+                                test: false,
+                                templateType: '',
+                                configStructure: false,
+                                meta: false,
+                                version: '2.16.0',
+                                date: new Date()
+                            });
+
+                            console.log(pluginJs);
+                            saveToDisk.downloadTextAsFile(enteredName + '.js', pluginJs);
+                        });
 
 
-            },
-            function (err) {
-                self._logger.error('Could not load plugin template for export', err);
-            }
-        );
+                    },
+                    function (err) {
+                        self._logger.error('Could not load plugin template for export', err);
+                    }
+                );
+        }
     };
 
     // Splitter methods (borrowed from SplitPanel)
