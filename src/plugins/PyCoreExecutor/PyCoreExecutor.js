@@ -84,7 +84,7 @@ define([
 
             childProc.stdout.on('data', data => {
                 // logger.info(data.toString());
-                logger.debug(data.toString());
+                logger.info(data.toString());
             });
 
             childProc.stderr.on('data', data => {
@@ -100,7 +100,7 @@ define([
             });
 
             childProc.on('error', (err) => {
-                deferred.resolve(err);
+                logger.error(err);
             });
 
             return deferred.promise;

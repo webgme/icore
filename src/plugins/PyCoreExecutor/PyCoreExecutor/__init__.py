@@ -5,6 +5,8 @@ The PyCoreExecutor-class is imported from both run_plugin.py and run_debug.py
 import sys
 from webgme_bindings import PluginBase
 
+is_python_3 = sys.version_info > (3, 0)
+
 class NotificationLogger(object):
     def __init__(self, plugin):
         self._plugin = plugin
@@ -31,8 +33,13 @@ class PyCoreExecutor(PluginBase):
         root_node = self.root_node
         active_node = self.active_node
         config = self.get_current_config()
+        scope = {'PluginBase': PluginBase}
 
-        exec(config["script"]);
+        if is_python_3:
+            exec(config['script'], scope);
+        else:
+            exec(config['script'])
+            scope['PythonPlugin'] = PythonPlugin
 
         active_selection = [];
         if self.active_selection is not None:
@@ -40,7 +47,7 @@ class PyCoreExecutor(PluginBase):
                         active_selection.append(core.get_path(as_path))
 
 
-        plugin = PythonPlugin(self._webgme, self.commit_hash, self.branch_name, core.get_path(active_node), active_selection, self.namespace)
+        plugin = scope['PythonPlugin'](self._webgme, self.commit_hash, self.branch_name, core.get_path(active_node), active_selection, self.namespace)
         NotificationLogger(plugin)
 
         plugin.main();
