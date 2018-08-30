@@ -11,14 +11,12 @@ define([
     'q',
     'plugin/PluginConfig',
     'text!./metadata.json',
-    'plugin/PluginBase',
-    'plugin/PluginMessage'
+    'plugin/PluginBase'
 ], function (
     Q,
     PluginConfig,
     pluginMetadata,
-    PluginBase,
-    PluginMessage) {
+    PluginBase) {
     'use strict';
 
     pluginMetadata = JSON.parse(pluginMetadata);
@@ -91,7 +89,7 @@ define([
 
             childProc.stdout.on('data', data => {
                 // logger.info(data.toString());
-                logger.info(data.toString());
+                logger.debug(data.toString());
             });
 
             childProc.stderr.on('data', data => {

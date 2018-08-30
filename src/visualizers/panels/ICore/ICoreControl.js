@@ -7,6 +7,7 @@
 define([
     'js/Constants',
     './ICorePluginEvaluator',
+    './ICoreRunServerPlugin',
     'js/Toolbar/ToolbarDropDownButton',
     'js/Utils/ComponentSettings',
     'js/Dialogs/PluginResults/PluginResultsDialog',
@@ -14,6 +15,7 @@ define([
     'js/Loader/LoaderCircles'
 ], function (CONSTANTS,
              ICorePluginEvaluator,
+             ICoreRunServerPlugin,
              ToolbarDropDownButton,
              ComponentSettings,
              PluginResultsDialog,
@@ -51,6 +53,8 @@ define([
         ICorePluginEvaluator.call(this);
         var self = this;
         this._logger = options.logger.fork('Control');
+
+        this.serverPluginRunner = new ICoreRunServerPlugin(this);
 
         this._pythonNotification = this._pythonNotification.bind(self);
         this._client = options.client;
@@ -107,23 +111,14 @@ define([
                 self._executing = true;
                 self.$btnExecute._btn.enabled(false);
             }
+
             self._widget.clearConsole();
             switch (self._language) {
                 case 'python':
-                    var context = self._client.getCurrentPluginContext('PyCoreExecutor'),
-                        dialog;
-
-                    context.pluginConfig = {script: self._widget.getCode()};
-                    self._client.runServerPlugin('PyCoreExecutor', context, function (err, pluginResult) {
+                    self.serverPluginRunner.runPlugin(function () {
                         self.$btnExecute._btn.enabled(true);
                         self._executing = false;
-
-                        if (pluginResult && pluginResult.artifacts && pluginResult.messages && (pluginResult.artifacts.length || pluginResult.messages.length)) {
-                            //we have something to show
-                            pluginResult = new PluginResult(pluginResult);
-                            dialog = new PluginResultsDialog();
-                            dialog.show(self._client, [pluginResult]);
-                        }
+                        self._widget._codeEditor.focus();
                     });
                     break;
                 default:
