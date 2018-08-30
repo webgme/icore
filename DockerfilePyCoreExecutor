@@ -1,0 +1,27 @@
+# Build a and run docker image for this repository
+# 1. make sure docker is installed
+# 2. make sure you have a clean copy of this repository
+# 3. go to the directory where this file exists (the root of your repo)
+# 4. $ docker build -t webgme-py-core-executor -f DockerfilePyCoreExecutor .
+
+# Node 8
+FROM node:carbon
+MAINTAINER Patrik Meijer <patrik.meijer@vanderbilt.edu>
+
+RUN apt-get update\
+ apt-get install -y git
+
+RUN mkdir /usr/app
+
+WORKDIR /usr/app
+
+# copy app source
+ADD . /usr/app/
+
+# Install webgme
+RUN npm install webgme
+
+# Install node-modules
+RUN npm install
+
+RUN cp /usr/app/node_modules/webgme-docker-worker-manager/dockerworker.js /usr/app/dockerworker.js
