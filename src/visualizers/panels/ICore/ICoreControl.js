@@ -59,6 +59,7 @@ define([
         this._config = options.config;
         this._configId = options.configId;
         this._language = this._config.codeEditor.language || 'javascript';
+        this._executing = false;
 
         this._pythonExecutionAllowed = WebGMEGlobal.gmeConfig.plugin.allowServerExecution === true &&
             WebGMEGlobal.allPlugins.indexOf('PyCoreExecutor') !== -1;
@@ -100,9 +101,13 @@ define([
         };
 
         this._widget.executeCode = function () {
+            if (self._executing) {
+                return;
+            } else {
+                self._executing = true;
+                self.$btnExecute._btn.enabled(false);
+            }
             self._widget.clearConsole();
-            self._btnExecuteLoader.start();
-            self.$btnExecute._btn.enabled(false);
             switch (self._language) {
                 case 'python':
                     var context = self._client.getCurrentPluginContext('PyCoreExecutor'),
@@ -110,10 +115,8 @@ define([
 
                     context.pluginConfig = {script: self._widget.getCode()};
                     self._client.runServerPlugin('PyCoreExecutor', context, function (err, pluginResult) {
-                        self._logger.info(err);
-                        self._logger.info(pluginResult);
-                        self._btnExecuteLoader.stop();
                         self.$btnExecute._btn.enabled(true);
+                        self._executing = false;
 
                         if (pluginResult && pluginResult.artifacts && pluginResult.messages && (pluginResult.artifacts.length || pluginResult.messages.length)) {
                             //we have something to show
@@ -131,8 +134,8 @@ define([
                             self._widget.addConsoleMessage('info', ['Execution finished!']);
                         }
 
-                        self._btnExecuteLoader.stop();
                         self.$btnExecute._btn.enabled(true);
+                        self._executing = false;
                         self._widget._codeEditor.focus();
                     });
             }
