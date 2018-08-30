@@ -1,4 +1,5 @@
-/*globals define, $, clearInterval, setInterval*/
+/*globals define, $*/
+/*jshint browser: true*/
 /**
  * Evaluates the code from the widget and creates and calls a plugin
  *
@@ -8,9 +9,8 @@
 define([
     'common/util/guid',
     'plugin/PluginResult',
-    'js/Dialogs/PluginResults/PluginResultsDialog',
-    'js/Loader/ProgressNotification',
-], function (GUID, PluginResult, PluginResultsDialog, ProgressNotification) {
+    'js/Dialogs/PluginResults/PluginResultsDialog'
+], function (GUID, PluginResult, PluginResultsDialog) {
     'use strict';
 
     function ICoreRunServerPlugin(iCoreControl) {
@@ -69,27 +69,31 @@ define([
             if (result.success) {
                 msg += 'finished with success! (click for details)';
             } else {
-                msg += 'failed (click for details), error: ' + result.error;
+                msg += 'failed (click here for details), error: ' + result.error;
             }
 
             note.update({
                 message: msg,
                 progress: 100,
-                delay: result.success ? 5000 : 20000,
-                type: result.success ? 'success' : 'danger',
-                mouse_over: 'pause',
-                onClose: function () {
-                    note.$ele.off();
-                }
+                type: result.success ? 'success' : 'danger'
             });
 
-            note.$ele.css('cursor', 'pointer');
+            let timeoutId = setTimeout(() => {
+                note.close();
+            }, 3000);
 
-            note.$ele.on('click', function () {
+            note.$ele.css('cursor', 'pointer');
+            note.$ele.find('button.close').on('click', function () {
+                clearTimeout(timeoutId);
+                note.close();
+            });
+
+            note.$ele.find('span').on('click', function () {
                 if (self._results.length > 0) {
                     self.showResultDialog(result.__id);
                 }
 
+                clearTimeout(timeoutId);
                 note.close();
             });
         });

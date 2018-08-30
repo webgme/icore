@@ -94,11 +94,15 @@ define([
 
             childProc.stderr.on('data', data => {
                 logger.error(data.toString());
+                this.sendNotification({
+                    message: data.toString(),
+                    severity: 'error',
+                });
             });
 
             childProc.on('close', (code) => {
                 if (code > 0) {
-                    deferred.reject(new Error(`${program} ${args.join(' ')} exited with code ${code}.`));
+                    deferred.reject(new Error(`Python process failed with error.`));
                 } else {
                     deferred.resolve();
                 }
