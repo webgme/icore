@@ -100,7 +100,7 @@ define([
             });
 
             childProc.on('error', (err) => {
-                logger.error(err);
+                deferred.reject(err);
             });
 
             return deferred.promise;

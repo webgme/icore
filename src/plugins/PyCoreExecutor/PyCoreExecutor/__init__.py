@@ -39,7 +39,7 @@ class PyCoreExecutor(PluginBase):
             exec(config['script'])
             scope['PythonPlugin'] = PythonPlugin
 
-        plugin = scope['PythonPlugin'](self._webgme, self.commit_hash, self.branch_name, core.get_path(active_node), active_selection, self.namespace)
+        plugin = scope['PythonPlugin'](self._webgme, self.commit_hash, self.branch_name, core.get_path(self.active_node), active_selection, self.namespace)
         NotificationLogger(plugin)
 
         plugin.main();
