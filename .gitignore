@@ -32,4 +32,6 @@ node_modules
 tmp/
 blob-local-storage/
 
+# Python binaries
 __pycache__
+*.pyc

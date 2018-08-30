@@ -387,6 +387,41 @@ define([
         this._toolbarItems = [];
 
         this._toolbarItems.push(toolBar.addSeparator());
+        // Set language
+        var codeLangBtn = $('<i class="code-lang-btn">' + self._config.codeEditor.language + '</i>');
+        this.$btnSetCodeLang = toolBar.addDropDownButton({
+            title: 'Script Language',
+            icon: codeLangBtn,
+            menuClass: 'no-min-width',
+            clickFn: function () {
+                self.$btnSetCodeLang.clear();
+                ['javascript', 'python'].forEach(function (lang) {
+                    self.$btnSetCodeLang.addButton({
+                        title: 'Click to select language',
+                        text: lang,
+                        clickFn: function () {
+                            ComponentSettings.updateComponentSettings(self._configId, {
+                                    codeEditor: {
+                                        language: lang
+                                    }
+                                },
+                                function (err) {
+                                    if (err) {
+                                        self._logger.error(err);
+                                    }
+                                });
+                            codeLangBtn.text(lang);
+                            self._language = lang;
+                            self._onLoad(self._currentNodeId);
+                        }
+                    });
+                });
+            }
+        });
+
+        this._toolbarItems.push(this.$btnSetCodeLang);
+
+        this._toolbarItems.push(toolBar.addSeparator());
 
         this.$btnExportToPlugin = toolBar.addButton({
             title: 'Export to a plugin',
@@ -534,40 +569,6 @@ define([
         });
 
         this._toolbarItems.push(this.$btnSetLogLevel);
-
-        // Set language
-        var codeLangBtn = $('<i class="code-lang-btn">' + self._config.codeEditor.language + '</i>');
-        this.$btnSetCodeLang = toolBar.addDropDownButton({
-            title: 'Script Language',
-            icon: codeLangBtn,
-            menuClass: 'no-min-width',
-            clickFn: function () {
-                self.$btnSetCodeLang.clear();
-                ['javascript', 'python'].forEach(function (lang) {
-                    self.$btnSetCodeLang.addButton({
-                        title: 'Click to select language',
-                        text: lang,
-                        clickFn: function () {
-                            ComponentSettings.updateComponentSettings(self._configId, {
-                                    codeEditor: {
-                                        language: lang
-                                    }
-                                },
-                                function (err) {
-                                    if (err) {
-                                        self._logger.error(err);
-                                    }
-                                });
-                            codeLangBtn.text(lang);
-                            self._language = lang;
-                            self._onLoad(self._currentNodeId);
-                        }
-                    });
-                });
-            }
-        });
-
-        this._toolbarItems.push(this.$btnSetCodeLang);
 
         // Clear console
         // this.$btnClearConsole = toolBar.addButton({

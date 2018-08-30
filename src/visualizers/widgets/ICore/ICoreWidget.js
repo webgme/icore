@@ -37,11 +37,27 @@ define([
 
     'use strict';
 
-    function camelCaseArrayToPythonArray(inputStrings) {
+    const SNAKE_CASE_EXCLUDES = {
+        getFCO: 'get_fco',
+        CONSTANTS: 'CONSTANTS',
+        META: 'META'
+    };
+
+    function getLanguageCases(inputStrings) {
         return inputStrings.map(function (inputString) {
-            return inputString.replace(/([A-Z])/g, function ($1) {
-                return '_' + $1.toLowerCase();
-            });
+            if (SNAKE_CASE_EXCLUDES[inputString]) {
+                return {
+                    js: inputString,
+                    python: SNAKE_CASE_EXCLUDES[inputString],
+                };
+            }
+
+            return {
+                js: inputString,
+                python: inputString.replace(/([A-Z])/g, function ($1) {
+                    return '_' + $1.toLowerCase();
+                }),
+            };
         });
     }
 
@@ -93,13 +109,18 @@ define([
         PROJECT_TYPE_MAP = {
             projectId: 'STRING',
             projectName: 'STRING',
-            CONSTANTS: 'OBJECT'
+            CONSTANTS: 'OBJECT',
+            gmeConfig: 'OBJECT',
+        },
+        CORE_TYPE_MAP = {
+            CONSTANTS: 'OBJECT',
         },
         PLUGIN_EXCLUDES = ['pluginMetadata', '_currentConfig', 'isConfigured', 'notificationHandlers', 'main',
             'updateMETA', '_createFork', 'isInvalidActiveNode', 'initialize', 'configure', 'setCurrentConfig',
             // These are fine to call but doesn't add any help.
             'getMetadata', 'getId', 'getName', 'getDescription', 'getConfigStructure', 'getCurrentConfig',
-            'addCommitToResult', 'getDefaultConfig', 'getVersion'
+            'addCommitToResult', 'getDefaultConfig', 'getVersion', 'callDepth', 'getPluginDependencies',
+            'invokePlugin',
         ],
         PLUGIN_TYPE_MAP = {
             gmeConfig: 'OBJECT',
@@ -124,7 +145,10 @@ define([
 
             save: 'ASYNC',
             fastForward: 'ASYNC',
-            loadNodeMap: 'ASYNC'
+            loadNodeMap: 'ASYNC',
+
+            // Just for python
+            util: 'OBJECT'
         },
         BLOB_EXCLUDES = [
             // Also excludes all ending with URL
@@ -133,6 +157,46 @@ define([
             createArtifact: 'FUNCTION',
             getHumanSize: 'FUNCTION',
             getDownloadURL: 'FUNCTION'
+        },
+        PYTHON_EXCLUDES = {
+            PLUGIN: {
+                baseIsMeta: true,
+                blobClient: true,
+                branchHash: true,
+                currentHash: true,
+                fastForward: true,
+                getMetaType: true,
+                getUserId: true,
+                isMetaTypeOf: true,
+                projectId: true,
+                projectName: true,
+                result: true,
+                save: true,
+                updateSuccess: true,
+                loadNodeMap: true,
+            },
+            PROJECT: {
+                projectId: true,
+                projectName: true,
+            }
+        },
+        PYTHON_UTILS = {
+            equal: {
+                class: 'function',
+                text: 'F'
+            },
+            save: {
+                class: 'function',
+                text: 'F'
+            },
+            META: {
+                class: 'function',
+                text: 'F'
+            },
+            gme_config: {
+                class: 'object',
+                text: 'O'
+            }
         },
         coreHints,
         pluginHints,
@@ -348,10 +412,9 @@ define([
                     anchor.prop('title', 'View docs');
                     switch (self._language) {
                         case 'python':
-                            // anchor.attr('href', 'docs/source/' + path + '#' + name + '__anchor');
-                            anchor.attr('href', 'bindings-docs/python/_static/' + path +
-                                '#webgme_bindings.' + path.replace('.html', '').toLowerCase() + '.' +
-                                path.replace('.html', '') + '.' + name);
+                            const lcPath = path.toLowerCase();
+                            anchor.attr('href', 'bindings-docs/python/_static/' + lcPath +
+                                '.html#webgme_bindings.' + lcPath + '.' + path + '.' + name);
 
                             if (path.toLowerCase().indexOf('logger') !== -1) {
                                 hasAnchor = false;
@@ -395,17 +458,23 @@ define([
             case 'python':
                 switch (token.string) {
                     case 'core':
-                        hints = camelCaseArrayToPythonArray(coreHints)
-                            .filter(function (name) {
-                                return name.indexOf(filter) === 0;
+                        hints = getLanguageCases(coreHints)
+                            .filter(function (entry) {
+                                return entry.python.indexOf(filter) === 0;
                             })
-                            .map(function (name) {
-                                var type = HINT_TYPES.FUNCTION;
+                            .map(function (entry) {
+                                let type = CORE_TYPE_MAP[entry.js];
+
+                                if (!type) {
+                                    type = HINT_TYPES.FUNCTION;
+                                } else {
+                                    type = HINT_TYPES[type];
+                                }
 
                                 return {
-                                    text: getCompletionText(name, filter, type),
+                                    text: getCompletionText(entry.python, filter, type),
                                     className: 'icore-hint',
-                                    render: getRenderFunction(name, type, 'Core.html')
+                                    render: getRenderFunction(entry.python, type, 'Core')
                                 };
                             });
                         break;
@@ -423,6 +492,74 @@ define([
                                 };
                             });
                         break;
+                    case 'project':
+                        hints = getLanguageCases(projectHints)
+                            .filter(function (entry) {
+                                if (PYTHON_EXCLUDES.PLUGIN[entry.js]) {
+                                    return false;
+                                }
+
+                                return entry.python.indexOf(filter) === 0;
+                            })
+                            .map(function (entry) {
+                                const type = PROJECT_TYPE_MAP[entry.js] ?
+                                    HINT_TYPES[PROJECT_TYPE_MAP[entry.js]] : HINT_TYPES.FUNCTION;
+
+                                return {
+                                    text: getCompletionText(entry.python, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(entry.python, type, 'Project')
+                                };
+                            });
+                        break;
+                    case 'self':
+                        hints = getLanguageCases(pluginHints.concat(['util']))
+                            .filter(function (entry) {
+                                if (PYTHON_EXCLUDES.PLUGIN[entry.js]) {
+                                    return false;
+                                }
+
+                                return entry.python.indexOf(filter) === 0;
+                            })
+                            .map(function (entry) {
+                                const type = PLUGIN_TYPE_MAP[entry.js] ?
+                                    HINT_TYPES[PLUGIN_TYPE_MAP[entry.js]] : HINT_TYPES.FUNCTION;
+
+                                return {
+                                    text: getCompletionText(entry.python, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(entry.python, type, 'PluginBase')
+                                };
+                            });
+                        break;
+                    case 'util':
+                        hints = Object.keys(PYTHON_UTILS)
+                            .filter(function (name) {
+                                return name.indexOf(filter) === 0;
+                            })
+                            .map(function (name) {
+                                const type = PYTHON_UTILS[name];
+
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'Util')
+                                };
+                            });
+                        break;
+                    case 'META':
+                        hints = Object.keys(this.METAHints).filter(function (name) {
+                            return name.indexOf(filter) === 0;
+                        })
+                            .map(function (name) {
+                                var type = HINT_TYPES.META_NODE;
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, self.METAHints[name])
+                                };
+                            });
+                        break;
                 }
                 break;
             default:
@@ -433,8 +570,14 @@ define([
                                 return name.indexOf(filter) === 0;
                             })
                             .map(function (name) {
-                                var type = name.indexOf('load') === 0 || CORE_EXTRA_ASYNCS.indexOf(name) > -1 ?
-                                    HINT_TYPES.ASYNC : HINT_TYPES.FUNCTION;
+                                let type = CORE_TYPE_MAP[name];
+
+                                if (!type) {
+                                    type = name.indexOf('load') === 0 || CORE_EXTRA_ASYNCS.indexOf(name) > -1 ?
+                                        HINT_TYPES.ASYNC : HINT_TYPES.FUNCTION;
+                                } else {
+                                    type = HINT_TYPES[type];
+                                }
 
                                 return {
                                     text: getCompletionText(name, filter, type),
@@ -491,7 +634,8 @@ define([
                             return name.indexOf(filter) === 0;
                         })
                             .map(function (name) {
-                                var type = PLUGIN_TYPE_MAP[name] ? HINT_TYPES[PLUGIN_TYPE_MAP[name]] : HINT_TYPES.FUNCTION;
+                                var type = PLUGIN_TYPE_MAP[name] ?
+                                    HINT_TYPES[PLUGIN_TYPE_MAP[name]] : HINT_TYPES.FUNCTION;
 
                                 return {
                                     text: getCompletionText(name, filter, type),
