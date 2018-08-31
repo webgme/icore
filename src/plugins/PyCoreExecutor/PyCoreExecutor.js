@@ -24,7 +24,7 @@ define([
     // Modify these as needed..
     const MAX_RUN_TIME = 5000;
     const START_PORT = 5555;
-    const COMMAND = 'python';
+    const COMMAND = 'python3';
     const SCRIPT_FILE = 'src/plugins/PyCoreExecutor/run_plugin.py';
 
     /**

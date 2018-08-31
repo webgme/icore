@@ -21,9 +21,8 @@
 # Node 8
 FROM node:carbon
 MAINTAINER Patrik Meijer <patrik.meijer@vanderbilt.edu>
-
-RUN apt-get update\
- apt-get install -y git
+RUN apt-get
+RUN apt-get install -y git
 
 RUN mkdir /usr/app
 
@@ -37,10 +36,5 @@ RUN npm install webgme
 
 # Install node-modules
 RUN npm install
-
-# Set environment variable in order to use ./config/config.docker.js
-ENV NODE_ENV docker
-
-EXPOSE 8001
 
 CMD ["npm", "start"]
