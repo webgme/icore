@@ -43,6 +43,6 @@
   "dependencies": {
     "webgme": "^2.30.0",
     "webgme-bindings": "^1.0.0",
-    "webgme-docker-worker-manager": "^0.2.1"
+    "webgme-docker-worker-manager": "^0.3.0"
   }
 }

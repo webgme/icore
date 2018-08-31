@@ -9,7 +9,9 @@ FROM node:carbon
 MAINTAINER Patrik Meijer <patrik.meijer@vanderbilt.edu>
 
 RUN apt-get update\
- apt-get install -y git
+ apt-get install -y git python3-pip
+
+RUN pip3 install webgme-bindings
 
 RUN mkdir /usr/app
 
