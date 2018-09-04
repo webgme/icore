@@ -55,8 +55,6 @@ define([
     };
 
     ICorePanel.prototype._initialize = function () {
-        var self = this;
-
         this.widget = new ICoreWidget(this.logger, this.$el, this._config, ICorePanel.getComponentId());
 
         this.control = new ICoreControl({
@@ -66,6 +64,16 @@ define([
             config: this._config,
             configId: ICorePanel.getComponentId()
         });
+
+        // While open undo/redo should only affect the codemirror instance.
+        // Therefor stop the event propagation of ctrl+z up to the project navigator.
+        this.undoRedoBlock = function (e) {
+            if (e.keyCode === 90 && e.ctrlKey) {
+                e.stopPropagation();
+            }
+        };
+
+        document.addEventListener('keydown', this.undoRedoBlock);
 
         this.onActivate();
     };
@@ -84,6 +92,7 @@ define([
 
     /* * * * * * * * Visualizer life cycle callbacks * * * * * * * */
     ICorePanel.prototype.destroy = function () {
+        document.removeEventListener('keydown', this.undoRedoBlock);
         this.control.destroy();
         this.widget.destroy();
 

@@ -795,7 +795,8 @@ define([
 
     ICoreWidget.prototype.setCodeLanguage = function (lang) {
         this._language = lang;
-        this._codeEditor.setOption("mode", lang);
+        this._codeEditor.setOption('mode', lang);
+        this._codeEditor.clearHistory();
     };
 
     ICoreWidget.prototype.clearConsole = function () {
