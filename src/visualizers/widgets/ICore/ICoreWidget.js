@@ -37,6 +37,30 @@ define([
 
     'use strict';
 
+    const SNAKE_CASE_EXCLUDES = {
+        getFCO: 'get_fco',
+        CONSTANTS: 'CONSTANTS',
+        META: 'META'
+    };
+
+    function getLanguageCases(inputStrings) {
+        return inputStrings.map(function (inputString) {
+            if (SNAKE_CASE_EXCLUDES[inputString]) {
+                return {
+                    js: inputString,
+                    python: SNAKE_CASE_EXCLUDES[inputString],
+                };
+            }
+
+            return {
+                js: inputString,
+                python: inputString.replace(/([A-Z])/g, function ($1) {
+                    return '_' + $1.toLowerCase();
+                }),
+            };
+        });
+    }
+
     var ICoreWidget,
         WIDGET_CLASS = 'icore-widget',
         LOG_LEVELS = {
@@ -85,13 +109,18 @@ define([
         PROJECT_TYPE_MAP = {
             projectId: 'STRING',
             projectName: 'STRING',
-            CONSTANTS: 'OBJECT'
+            CONSTANTS: 'OBJECT',
+            gmeConfig: 'OBJECT',
+        },
+        CORE_TYPE_MAP = {
+            CONSTANTS: 'OBJECT',
         },
         PLUGIN_EXCLUDES = ['pluginMetadata', '_currentConfig', 'isConfigured', 'notificationHandlers', 'main',
             'updateMETA', '_createFork', 'isInvalidActiveNode', 'initialize', 'configure', 'setCurrentConfig',
             // These are fine to call but doesn't add any help.
             'getMetadata', 'getId', 'getName', 'getDescription', 'getConfigStructure', 'getCurrentConfig',
-            'addCommitToResult', 'getDefaultConfig', 'getVersion'
+            'addCommitToResult', 'getDefaultConfig', 'getVersion', 'callDepth', 'getPluginDependencies',
+            'invokePlugin',
         ],
         PLUGIN_TYPE_MAP = {
             gmeConfig: 'OBJECT',
@@ -116,7 +145,10 @@ define([
 
             save: 'ASYNC',
             fastForward: 'ASYNC',
-            loadNodeMap: 'ASYNC'
+            loadNodeMap: 'ASYNC',
+
+            // Just for python
+            util: 'OBJECT'
         },
         BLOB_EXCLUDES = [
             // Also excludes all ending with URL
@@ -125,6 +157,46 @@ define([
             createArtifact: 'FUNCTION',
             getHumanSize: 'FUNCTION',
             getDownloadURL: 'FUNCTION'
+        },
+        PYTHON_EXCLUDES = {
+            PLUGIN: {
+                baseIsMeta: true,
+                blobClient: true,
+                branchHash: true,
+                currentHash: true,
+                fastForward: true,
+                getMetaType: true,
+                getUserId: true,
+                isMetaTypeOf: true,
+                projectId: true,
+                projectName: true,
+                result: true,
+                save: true,
+                updateSuccess: true,
+                loadNodeMap: true,
+            },
+            PROJECT: {
+                projectId: true,
+                projectName: true,
+            }
+        },
+        PYTHON_UTILS = {
+            equal: {
+                class: 'function',
+                text: 'F'
+            },
+            save: {
+                class: 'function',
+                text: 'F'
+            },
+            META: {
+                class: 'function',
+                text: 'F'
+            },
+            gme_config: {
+                class: 'object',
+                text: 'O'
+            }
         },
         coreHints,
         pluginHints,
@@ -172,20 +244,21 @@ define([
         this._autoSave = config.codeEditor.autoSave;
         this._autoSaveTimerId = null;
         this._templates = config.templates;
-        this._defaultTemplateId = null;
+        this._defaultTemplateIds = {};
         this._verticalSplit = true;
         this._splitterRelPos = 0.5;
 
+        this._language = config.codeEditor.language || 'javascript';
+
         for (templateId in this._templates) {
             if (this._templates[templateId].default) {
-                this._defaultTemplateId = templateId;
-                break;
+                this._defaultTemplateIds[this._templates[templateId].language || 'javascript'] = templateId;
             }
         }
 
-        if (!this._defaultTemplateId) {
-            this._logger.warn('No default template defined!');
-        }
+        // if (!this._defaultTemplateId) {
+        //     this._logger.warn('No default template defined!');
+        // }
 
         this._initialize(config);
 
@@ -196,7 +269,7 @@ define([
         var self = this,
             codeEditorOptions = {
                 value: '',
-                mode: 'javascript',
+                mode: this._language,
                 lineNumbers: true,
                 matchBrackets: true,
                 tabSize: 2,
@@ -240,7 +313,7 @@ define([
                             if (token.string === '.') {
                                 token = cm.getTokenAt({line: cursor.line, ch: cursor.ch - 1});
                                 if (token.type === 'property' || token.type === 'variable-2' ||
-                                    token.type === 'keyword') {
+                                    token.type === 'keyword' || token.type === 'variable') {
 
                                     hints = self.getHintsForClass(token);
                                 }
@@ -249,7 +322,7 @@ define([
                                 filter = filter.substring(0, filter.length - (token.end - cursor.ch));
                                 token = cm.getTokenAt({line: cursor.line, ch: token.start - 1});
                                 if (token.type === 'property' || token.type === 'variable-2' ||
-                                    token.type === 'keyword') {
+                                    token.type === 'keyword' || token.type === 'variable') {
 
                                     hints = self.getHintsForClass(token, filter);
                                 }
@@ -267,6 +340,12 @@ define([
         this._codeEditor = codeMirror(this._el[0], codeEditorOptions);
         $(this._codeEditor.getWrapperElement()).addClass('code-editor');
 
+        this._codeEditor.on('beforeChange', function (cm, change) {
+            if (change.origin !== 'setValue' && change.from.line < 2 && self._language === 'python') {
+                change.cancel();
+            }
+        });
+
         this._codeEditor.on('change', function (cm, event) {
             if (event.origin !== 'setValue') {
                 if (self._autoSave) {
@@ -278,6 +357,17 @@ define([
                 }
 
                 self.setUnsavedChanges(true);
+            }
+        });
+
+        this._codeEditor.on('renderLine', function (cm, lh, element) {
+            if (self._language === 'python' && lh.lineNo() < 2) {
+                // console.log(lh);
+                $(element).find('span').addClass('python-greyed');
+                // self._codeEditor.addLineClass(lh, 'background', 'python-greyed');
+            } else {
+                $(element).find('span').removeClass('python-greyed');
+                // self._codeEditor.removeLineClass(lh, 'background', 'python-greyed');
             }
         });
 
@@ -298,7 +388,9 @@ define([
         $(this._consoleWindow.getWrapperElement()).addClass('console-window');
         this._consoleWindow.setOption('extraKeys', extraKeys);
 
-        this._consoleStr = 'Use the logger to print here (e.g. this.logger.info)';
+
+        this._initConsoleText();
+
         this._logs = [];
 
 
@@ -313,6 +405,7 @@ define([
             return function (el/*, cm, data*/) {
                 var $el = $(el),
                     anchor = $('<a target="_blank"/>'),
+                    hasAnchor = true,
                     url;
 
                 if (type === HINT_TYPES.META_NODE) {
@@ -328,10 +421,24 @@ define([
                     anchor.attr('href', url);
                 } else {
                     anchor.prop('title', 'View docs');
-                    anchor.attr('href', '/docs/source/' + path + '#' + name + '__anchor');
+                    switch (self._language) {
+                        case 'python':
+                            const lcPath = path.toLowerCase();
+                            anchor.attr('href', 'bindings-docs/python/_static/' + lcPath +
+                                '.html#webgme_bindings.' + lcPath + '.' + path + '.' + name);
+
+                            if (path.toLowerCase().indexOf('logger') !== -1) {
+                                hasAnchor = false;
+                            }
+                            break;
+                        default:
+                            anchor.attr('href', 'docs/source/' + path + '#' + name + '__anchor');
+                    }
                 }
 
-                anchor.append($('<i class="glyphicon glyphicon-share"/>'));
+                if (hasAnchor) {
+                    anchor.append($('<i class="glyphicon glyphicon-share"/>'));
+                }
 
                 $el.append($('<span>', {
                     class: 'circle ' + type.class,
@@ -358,112 +465,256 @@ define([
 
         filter = filter || '';
 
-        switch (token.string) {
-            case 'core':
-                hints = coreHints
-                    .filter(function (name) {
-                        return name.indexOf(filter) === 0;
-                    })
-                    .map(function (name) {
-                        var type = name.indexOf('load') === 0 || CORE_EXTRA_ASYNCS.indexOf(name) > -1 ?
-                            HINT_TYPES.ASYNC : HINT_TYPES.FUNCTION;
+        switch (self._language) {
+            case 'python':
+                switch (token.string) {
+                    case 'core':
+                        hints = getLanguageCases(coreHints)
+                            .filter(function (entry) {
+                                return entry.python.indexOf(filter) === 0;
+                            })
+                            .map(function (entry) {
+                                let type = CORE_TYPE_MAP[entry.js];
 
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, type, 'Core.html')
-                        };
-                    });
-                break;
-            case 'blobClient':
-                hints = blobHints.filter(function (name) {
-                    return name.indexOf(filter) === 0;
-                })
-                    .map(function (name) {
-                        var type = BLOB_TYPE_MAP[name] ? HINT_TYPES[BLOB_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
+                                if (!type) {
+                                    type = HINT_TYPES.FUNCTION;
+                                } else {
+                                    type = HINT_TYPES[type];
+                                }
 
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, type, 'BlobClient.html')
-                        };
-                    });
-                break;
-            case 'project':
-                hints = projectHints.filter(function (name) {
-                    return name.indexOf(filter) === 0;
-                })
-                    .map(function (name) {
-                        var type = PROJECT_TYPE_MAP[name] ? HINT_TYPES[PROJECT_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
+                                return {
+                                    text: getCompletionText(entry.python, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(entry.python, type, 'Core')
+                                };
+                            });
+                        break;
+                    case 'logger':
+                        hints = ['debug', 'info', 'warn', 'error']
+                            .filter(function (name) {
+                                return name.indexOf(filter) === 0;
+                            })
+                            .map(function (name) {
+                                var type = HINT_TYPES.FUNCTION;
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, HINT_TYPES.FUNCTION, 'GmeLogger.html')
+                                };
+                            });
+                        break;
+                    case 'project':
+                        hints = getLanguageCases(projectHints)
+                            .filter(function (entry) {
+                                if (PYTHON_EXCLUDES.PLUGIN[entry.js]) {
+                                    return false;
+                                }
 
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, type, 'ProjectInterface.html')
-                        };
-                    });
-                break;
-            case 'logger':
-                hints = ['debug', 'info', 'warn', 'error']
-                    .filter(function (name) {
-                        return name.indexOf(filter) === 0;
-                    })
-                    .map(function (name) {
-                        var type = HINT_TYPES.FUNCTION;
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, HINT_TYPES.FUNCTION, 'GmeLogger.html')
-                        };
-                    });
-                break;
-            case 'this':
-            case 'self':
-                hints = pluginHints.filter(function (name) {
-                    return name.indexOf(filter) === 0;
-                })
-                    .map(function (name) {
-                        var type = PLUGIN_TYPE_MAP[name] ? HINT_TYPES[PLUGIN_TYPE_MAP[name]] : HINT_TYPES.FUNCTION;
+                                return entry.python.indexOf(filter) === 0;
+                            })
+                            .map(function (entry) {
+                                const type = PROJECT_TYPE_MAP[entry.js] ?
+                                    HINT_TYPES[PROJECT_TYPE_MAP[entry.js]] : HINT_TYPES.FUNCTION;
 
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, type, 'PluginBase.html')
-                        };
-                    });
-                break;
-            case 'META':
-                hints = Object.keys(this.METAHints).filter(function (name) {
-                    return name.indexOf(filter) === 0;
-                })
-                    .map(function (name) {
-                        var type = HINT_TYPES.META_NODE;
-                        return {
-                            text: getCompletionText(name, filter, type),
-                            className: 'icore-hint',
-                            render: getRenderFunction(name, type, self.METAHints[name])
-                        };
-                    });
+                                return {
+                                    text: getCompletionText(entry.python, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(entry.python, type, 'Project')
+                                };
+                            });
+                        break;
+                    case 'self':
+                        hints = getLanguageCases(pluginHints.concat(['util']))
+                            .filter(function (entry) {
+                                if (PYTHON_EXCLUDES.PLUGIN[entry.js]) {
+                                    return false;
+                                }
+
+                                return entry.python.indexOf(filter) === 0;
+                            })
+                            .map(function (entry) {
+                                const type = PLUGIN_TYPE_MAP[entry.js] ?
+                                    HINT_TYPES[PLUGIN_TYPE_MAP[entry.js]] : HINT_TYPES.FUNCTION;
+
+                                return {
+                                    text: getCompletionText(entry.python, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(entry.python, type, 'PluginBase')
+                                };
+                            });
+                        break;
+                    case 'util':
+                        hints = Object.keys(PYTHON_UTILS)
+                            .filter(function (name) {
+                                return name.indexOf(filter) === 0;
+                            })
+                            .map(function (name) {
+                                const type = PYTHON_UTILS[name];
+
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'Util')
+                                };
+                            });
+                        break;
+                    case 'META':
+                        hints = Object.keys(this.METAHints).filter(function (name) {
+                            return name.indexOf(filter) === 0;
+                        })
+                            .map(function (name) {
+                                var type = HINT_TYPES.META_NODE;
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, self.METAHints[name])
+                                };
+                            });
+                        break;
+                }
                 break;
             default:
-                hints = [];
-                break;
+                switch (token.string) {
+                    case 'core':
+                        hints = coreHints
+                            .filter(function (name) {
+                                return name.indexOf(filter) === 0;
+                            })
+                            .map(function (name) {
+                                let type = CORE_TYPE_MAP[name];
+
+                                if (!type) {
+                                    type = name.indexOf('load') === 0 || CORE_EXTRA_ASYNCS.indexOf(name) > -1 ?
+                                        HINT_TYPES.ASYNC : HINT_TYPES.FUNCTION;
+                                } else {
+                                    type = HINT_TYPES[type];
+                                }
+
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'Core.html')
+                                };
+                            });
+                        break;
+                    case 'blobClient':
+                        hints = blobHints.filter(function (name) {
+                            return name.indexOf(filter) === 0;
+                        })
+                            .map(function (name) {
+                                var type = BLOB_TYPE_MAP[name] ? HINT_TYPES[BLOB_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
+
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'BlobClient.html')
+                                };
+                            });
+                        break;
+                    case 'project':
+                        hints = projectHints.filter(function (name) {
+                            return name.indexOf(filter) === 0;
+                        })
+                            .map(function (name) {
+                                var type = PROJECT_TYPE_MAP[name] ? HINT_TYPES[PROJECT_TYPE_MAP[name]] : HINT_TYPES.ASYNC;
+
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'ProjectInterface.html')
+                                };
+                            });
+                        break;
+                    case 'logger':
+                        hints = ['debug', 'info', 'warn', 'error']
+                            .filter(function (name) {
+                                return name.indexOf(filter) === 0;
+                            })
+                            .map(function (name) {
+                                var type = HINT_TYPES.FUNCTION;
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, HINT_TYPES.FUNCTION, 'GmeLogger.html')
+                                };
+                            });
+                        break;
+                    case 'this':
+                    case 'self':
+                        hints = pluginHints.filter(function (name) {
+                            return name.indexOf(filter) === 0;
+                        })
+                            .map(function (name) {
+                                var type = PLUGIN_TYPE_MAP[name] ?
+                                    HINT_TYPES[PLUGIN_TYPE_MAP[name]] : HINT_TYPES.FUNCTION;
+
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, 'PluginBase.html')
+                                };
+                            });
+                        break;
+                    case 'META':
+                        hints = Object.keys(this.METAHints).filter(function (name) {
+                            return name.indexOf(filter) === 0;
+                        })
+                            .map(function (name) {
+                                var type = HINT_TYPES.META_NODE;
+                                return {
+                                    text: getCompletionText(name, filter, type),
+                                    className: 'icore-hint',
+                                    render: getRenderFunction(name, type, self.METAHints[name])
+                                };
+                            });
+                        break;
+                    default:
+                        hints = [];
+                        break;
+                }
         }
 
         return hints;
     };
 
+    ICoreWidget.prototype._initConsoleText = function () {
+        switch (this._language) {
+            case 'javascript':
+                this._consoleStr = 'Use the logger to print here (e.g. this.logger.info)';
+                break;
+            case 'python':
+                this._consoleStr = 'Use the logger to print here (e.g. python specific)';
+                break;
+        }
+    };
+
     // Adding/Removing/Updating items
     ICoreWidget.prototype.addNode = function (desc) {
+        this._codeEditor.setOption('mode', desc.language);
+
         if (typeof desc.scriptCode === 'string') {
             this._codeEditor.setValue(desc.scriptCode);
-        } else if (typeof this._defaultTemplateId === 'string') {
-            this._codeEditor.setValue(this._templates[this._defaultTemplateId].script);
+        } else if (typeof this._defaultTemplateIds[desc.language] === 'string') {
+            this._codeEditor.setValue(this._templates[this._defaultTemplateIds[desc.language]].script);
         } else {
             this._codeEditor.setValue('');
         }
 
+        if (this._language !== desc.language) {
+            this._language = desc.language;
+            this._initConsoleText();
+        }
+
         this._consoleWindow.setValue(this._consoleStr);
+
+        // if (desc.language === 'python') {
+        //     this._codeEditor.addLineClass(0, 'background', 'python-greyed');
+        //     this._codeEditor.addLineClass(1, 'background', 'python-greyed');
+        // } else {
+        //     this._codeEditor.removeLineClass(0, 'background', 'python-greyed');
+        //     this._codeEditor.removeLineClass(1, 'background', 'python-greyed');
+        // }
+
         this._consoleWindow.refresh();
         this._codeEditor.refresh();
     };
@@ -542,6 +793,11 @@ define([
         this._codeEditor.focus();
     };
 
+    ICoreWidget.prototype.setCodeLanguage = function (lang) {
+        this._language = lang;
+        this._codeEditor.setOption("mode", lang);
+    };
+
     ICoreWidget.prototype.clearConsole = function () {
         this._consoleStr = '';
         this._consoleWindow.setValue(this._consoleStr);
@@ -581,73 +837,138 @@ define([
     ICoreWidget.prototype.exportToPlugin = function () {
         var self = this;
 
-        requirejs(['text!plugin/PluginGenerator/PluginGenerator/Templates/plugin.js.ejs'],
-            function (template) {
-                var d = new ConfirmDialog();
+        switch (self._language) {
+            case 'python':
+                requirejs(['text!plugin/PluginGenerator/PluginGenerator/__init___py.ejs'],
+                    function (template) {
+                        var d = new ConfirmDialog(),
+                            code = self.getCode();
 
-                d.show({
-                    title: 'Export to Plugin',
-                    iconClass: 'fa fa-download',
-                    htmlQuestion: $('<div>Will generate &lt;PluginID&gt;.js. Note that this will only export the ' +
-                        '"main" file for the plugin. Unless overwriting an existing plugin you will have to edit the ' +
-                        'gmeConfig and add all necessary files. However it is recommended to first ' +
-                        'generate the boilerplate code using ' +
-                    '<a href="https://github.com/webgme/webgme-cli" target="_blank">webgme-cli</a>.</div>'),
-                    input: {
-                        label: 'PluginID',
-                        placeHolder: self._config.defaultPluginId || 'Enter PluginID...',
-                        required: false,
-                        checkFn: function (value) {
-                            if (self._config.defaultPluginId && !value) {
-                                return true;
+                        d.show({
+                            title: 'Export to Plugin',
+                            iconClass: 'fa fa-download',
+                            htmlQuestion: $('<div>Will generate __init__.py. Note that this will only export the ' +
+                                '"main" file for the plugin. Unless overwriting an existing plugin you will have to edit the ' +
+                                'gmeConfig and add all necessary files. However it is recommended to first ' +
+                                'generate the boilerplate code using ' +
+                                '<a href="https://github.com/webgme/webgme-cli" target="_blank">webgme-cli</a>.</div>'),
+                            input: {
+                                label: 'PluginID',
+                                placeHolder: self._config.defaultPluginId || 'Enter PluginID...',
+                                required: false,
+                                checkFn: function (value) {
+                                    if (self._config.defaultPluginId && !value) {
+                                        return true;
+                                    }
+
+                                    return /^(?!(?:do|if|in|for|let|new|try|var|case|else|enum|eval|false|null|this|true|void|with|break|catch|class|const|super|throw|while|yield|delete|export|import|public|return|static|switch|typeof|default|extends|finally|package|private|continue|debugger|function|arguments|interface|protected|implements|instanceof)$)[a-zA-Z_$][0-9a-zA-Z_$]*/.test(value);
+                                }
+                            },
+                            severity: 'info'
+                        }, function (_dummy, enteredName) {
+
+                            if (self._config.defaultPluginId && !enteredName) {
+                                enteredName = self._config.defaultPluginId;
+                            } else {
+                                // There was a new name entered store it in user settings.
+
+                                ComponentSettings.updateComponentSettings(self._configId, {defaultPluginId: enteredName},
+                                    function (err) {
+                                        if (err) {
+                                            self._logger.error(err);
+                                        } else {
+                                            self._config.defaultPluginId = enteredName;
+                                        }
+                                    });
                             }
 
-                            return /^(?!(?:do|if|in|for|let|new|try|var|case|else|enum|eval|false|null|this|true|void|with|break|catch|class|const|super|throw|while|yield|delete|export|import|public|return|static|switch|typeof|default|extends|finally|package|private|continue|debugger|function|arguments|interface|protected|implements|instanceof)$)[a-zA-Z_$][0-9a-zA-Z_$]*/.test(value);
-                        }
-                    },
-                    severity: 'info'
-                }, function (_dummy, enteredName) {
-
-                    if (self._config.defaultPluginId && !enteredName) {
-                        enteredName = self._config.defaultPluginId;
-                    } else {
-                        // There was a new name entered store it in user settings.
-
-                        ComponentSettings.updateComponentSettings(self._configId, {defaultPluginId: enteredName},
-                            function (err) {
-                                if (err) {
-                                    self._logger.error(err);
-                                } else {
-                                    self._config.defaultPluginId = enteredName;
-                                }
+                            code = code.replace(/PythonPlugin/g, enteredName);
+                            var pluginPy = ejs.render(template, {
+                                // PluginGenerator config as of webgme v2.16.0
+                                // The rendering of the template throws if any is missing!
+                                pluginID: enteredName,
+                                classImpl: code
                             });
+
+                            saveToDisk.downloadTextAsFile('__init__.py', pluginPy);
+                        });
+
+
+                    },
+                    function (err) {
+                        self._logger.error('Could not load plugin template for export', err);
                     }
+                );
+                break;
+            default:
+                requirejs(['text!plugin/PluginGenerator/PluginGenerator/plugin_js.ejs'],
+                    function (template) {
+                        var d = new ConfirmDialog();
 
-                    var pluginJs = ejs.render(template, {
-                        // PluginGenerator config as of webgme v2.16.0
-                        // The rendering of the template throws if any is missing!
-                        main: self.getCode(),
-                        pluginID: enteredName,
-                        pluginName: '',
-                        description: '',
-                        test: false,
-                        templateType: '',
-                        configStructure: false,
-                        meta: false,
-                        version: '2.16.0',
-                        date: new Date()
-                    });
+                        d.show({
+                            title: 'Export to Plugin',
+                            iconClass: 'fa fa-download',
+                            htmlQuestion: $('<div>Will generate &lt;PluginID&gt;.js. Note that this will only export the ' +
+                                '"main" file for the plugin. Unless overwriting an existing plugin you will have to edit the ' +
+                                'gmeConfig and add all necessary files. However it is recommended to first ' +
+                                'generate the boilerplate code using ' +
+                                '<a href="https://github.com/webgme/webgme-cli" target="_blank">webgme-cli</a>.</div>'),
+                            input: {
+                                label: 'PluginID',
+                                placeHolder: self._config.defaultPluginId || 'Enter PluginID...',
+                                required: false,
+                                checkFn: function (value) {
+                                    if (self._config.defaultPluginId && !value) {
+                                        return true;
+                                    }
 
-                    console.log(pluginJs);
-                    saveToDisk.downloadTextAsFile(enteredName + '.js', pluginJs);
-                });
+                                    return /^(?!(?:do|if|in|for|let|new|try|var|case|else|enum|eval|false|null|this|true|void|with|break|catch|class|const|super|throw|while|yield|delete|export|import|public|return|static|switch|typeof|default|extends|finally|package|private|continue|debugger|function|arguments|interface|protected|implements|instanceof)$)[a-zA-Z_$][0-9a-zA-Z_$]*/.test(value);
+                                }
+                            },
+                            severity: 'info'
+                        }, function (_dummy, enteredName) {
+
+                            if (self._config.defaultPluginId && !enteredName) {
+                                enteredName = self._config.defaultPluginId;
+                            } else {
+                                // There was a new name entered store it in user settings.
+
+                                ComponentSettings.updateComponentSettings(self._configId, {defaultPluginId: enteredName},
+                                    function (err) {
+                                        if (err) {
+                                            self._logger.error(err);
+                                        } else {
+                                            self._config.defaultPluginId = enteredName;
+                                        }
+                                    });
+                            }
+
+                            var pluginJs = ejs.render(template, {
+                                // PluginGenerator config as of webgme v2.16.0
+                                // The rendering of the template throws if any is missing!
+                                main: self.getCode(),
+                                pluginID: enteredName,
+                                pluginName: '',
+                                description: '',
+                                test: false,
+                                templateType: '',
+                                configStructure: false,
+                                meta: false,
+                                version: '2.16.0',
+                                date: new Date()
+                            });
+
+                            console.log(pluginJs);
+                            saveToDisk.downloadTextAsFile(enteredName + '.js', pluginJs);
+                        });
 
 
-            },
-            function (err) {
-                self._logger.error('Could not load plugin template for export', err);
-            }
-        );
+                    },
+                    function (err) {
+                        self._logger.error('Could not load plugin template for export', err);
+                    }
+                );
+        }
     };
 
     // Splitter methods (borrowed from SplitPanel)
@@ -700,7 +1021,7 @@ define([
             });
         } else {
             this._splitterResize.css({
-                width:  this._width,
+                width: this._width,
                 height: 6,
                 top: Math.floor((this._height - 6) * this._splitterResizePos),
                 left: 0

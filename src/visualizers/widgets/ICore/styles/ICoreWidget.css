@@ -20,6 +20,8 @@
     .icore-widget .code-editor.CodeMirror-focused {
       border-color: #cccccc;
       box-shadow: none; }
+    .icore-widget .code-editor .python-greyed {
+      opacity: 0.7; }
   .icore-widget .console-window {
     position: absolute;
     padding: 2px; }
@@ -58,3 +60,5 @@ li.CodeMirror-hint.icore-hint {
   li.CodeMirror-hint.icore-hint a {
     margin-left: 5px;
     float: right; }
+
+/*# sourceMappingURL=ICoreWidget.css.map */

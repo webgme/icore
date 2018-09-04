@@ -35,6 +35,9 @@
       border-color: #cccccc;
       box-shadow: none;
     }
+    .python-greyed {
+      opacity: 0.7;
+    }
   }
 
   .console-window {
@@ -61,7 +64,6 @@
     }
   }
 }
-
 
 li.CodeMirror-hint {
   &.icore-hint {

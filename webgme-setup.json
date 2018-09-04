@@ -8,9 +8,32 @@
         "secondary": false,
         "widget": "src/visualizers/widgets/ICore"
       }
-    }
+    },
+    "addons": {},
+    "decorators": {},
+    "layouts": {},
+    "plugins": {
+      "PyCoreExecutor": {
+        "src": "src/plugins/PyCoreExecutor",
+        "test": "test/plugins/PyCoreExecutor"
+      }
+    },
+    "routers": {},
+    "seeds": {}
   },
   "dependencies": {
-    "visualizers": {}
+    "visualizers": {},
+    "addons": {},
+    "decorators": {},
+    "layouts": {},
+    "plugins": {},
+    "routers": {
+      "BindingsDocs": {
+        "project": "webgme-bindings",
+        "path": "node_modules/webgme-bindings/src/routers/BindingsDocs",
+        "mount": "bindings-docs"
+      }
+    },
+    "seeds": {}
   }
 }
