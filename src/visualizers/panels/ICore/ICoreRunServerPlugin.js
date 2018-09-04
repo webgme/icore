@@ -80,7 +80,7 @@ define([
 
             let timeoutId = setTimeout(() => {
                 note.close();
-            }, 3000);
+            }, 5000);
 
             note.$ele.css('cursor', 'pointer');
             note.$ele.find('button.close').on('click', function () {
