@@ -360,6 +360,17 @@ define([
             }
         });
 
+        this._codeEditor.on('renderLine', function (cm, lh, element) {
+            if (self._language === 'python' && lh.lineNo() < 2) {
+                // console.log(lh);
+                $(element).find('span').addClass('python-greyed');
+                // self._codeEditor.addLineClass(lh, 'background', 'python-greyed');
+            } else {
+                $(element).find('span').removeClass('python-greyed');
+                // self._codeEditor.removeLineClass(lh, 'background', 'python-greyed');
+            }
+        });
+
         this._codeEditor.setOption('extraKeys', extraKeys);
 
         // The Splitter
@@ -696,13 +707,13 @@ define([
 
         this._consoleWindow.setValue(this._consoleStr);
 
-        if (desc.language === 'python') {
-            this._codeEditor.addLineClass(0, 'background', 'python-greyed');
-            this._codeEditor.addLineClass(1, 'background', 'python-greyed');
-        } else {
-            this._codeEditor.removeLineClass(0, 'background', 'python-greyed');
-            this._codeEditor.removeLineClass(1, 'background', 'python-greyed');
-        }
+        // if (desc.language === 'python') {
+        //     this._codeEditor.addLineClass(0, 'background', 'python-greyed');
+        //     this._codeEditor.addLineClass(1, 'background', 'python-greyed');
+        // } else {
+        //     this._codeEditor.removeLineClass(0, 'background', 'python-greyed');
+        //     this._codeEditor.removeLineClass(1, 'background', 'python-greyed');
+        // }
 
         this._consoleWindow.refresh();
         this._codeEditor.refresh();
