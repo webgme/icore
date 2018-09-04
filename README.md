@@ -35,6 +35,10 @@ Since the python mode will run user defined code on the back-end we strongly rec
 together with a version of `./DockerfilePyCoreExecutor`. (For an example of the configuration parameters
 needed for this to work check out `./config/config.docker.js` and `./docker-compose.yml`.)
 
+Finally import the router that serves the python source code documentation:
+```
+webgme import router BindingsDocs webgme-bindings
+```
 
 ## Developers
 
