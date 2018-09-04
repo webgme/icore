@@ -32,8 +32,8 @@ and `config.plugin.allowServerExecution = true;` must be added in the config.
 
 Since the python mode will run user defined code on the back-end we strongly recommend using
 [webgme-docker-worker-manager](https://www.npmjs.com/package/webgme-docker-worker-manager).
-Together with a version of `./DockerfilePyCoreExecutor`, for an example of the configuration parameters
-needed for this to work check out `./config/config.docker.js` and `./docker-compose.yml`.
+together with a version of `./DockerfilePyCoreExecutor`. (For an example of the configuration parameters
+needed for this to work check out `./config/config.docker.js` and `./docker-compose.yml`.)
 
 
 ## Developers
