@@ -18,7 +18,37 @@ webgme import viz ICore webgme-icore
 
 Once imported and server is restarted, register the visualizer at the nodes where it should be used. If the `'scriptCode'` attribute (configurable) isn't defined the model will have meta-violations after saving the code.
 
-## Running from this repository
+### Python specifics
+In general we do not recommend to use the python mode unless the users on the deployment
+are trustworthy and/or the deployment doesn't deal with sensitive data.
+
+In order to enable python execution you need to import the `PythonCoreExecutor` plugin.
+
+```
+webgme import plugin PythonCoreExecutor webgme-icore
+```
+
+and `config.plugin.allowServerExecution = true;` must be added in the config.
+
+Since the python mode will run user defined code on the back-end we strongly recommend using
+[webgme-docker-worker-manager](https://www.npmjs.com/package/webgme-docker-worker-manager).
+Together with a version of `./DockerfilePyCoreExecutor`, for an example of the configuration parameters
+needed for this to work check out `./config/config.docker.js` and `./docker-compose.yml`.
+
+
+## Developers
+
+### Docker compose
+If running on unix-like system this repo can be launched using docker-compose.
+See `./docker-compose.yml` for useful commands and details.
+
+```docker-compose up -d```
+
+Notes:
+ - The database-files will be persisted inside the container and the blob-files inside the webgme-server container.
+ - The webgme-server launches "docker-workers" on the host machine.
+
+### Running at host
 Make sure the [dependencies for webgme](https://github.com/webgme/webgme/blob/master/README.md#dependencies) are installed.
  1. Clone this repository
  2. `npm install` - installs all dependencies
@@ -26,8 +56,9 @@ Make sure the [dependencies for webgme](https://github.com/webgme/webgme/blob/ma
  4. Launch a local mongodb instance (if not local edit the webgme config).
  5. `npm start`
  6. Visit localhost:8888 from a browser.
- 
- ## Publish new release at npm
+
+
+### Publish new release at npm
  ```
  npm version 1.0.0 -m "Release %s"
  git push origin master
