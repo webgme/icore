@@ -13,7 +13,7 @@ define([
     'plugin/PluginBase',
     'blob/BlobClient',
     'js/Utils/WebGMEUrlManager',
-    'common/util/ejs',
+    'ejs',
     'js/Utils/SaveToDisk',
     'js/Dialogs/Confirm/ConfirmDialog',
     'js/Utils/ComponentSettings',
