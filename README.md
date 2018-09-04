@@ -22,10 +22,10 @@ Once imported and server is restarted, register the visualizer at the nodes wher
 In general we do not recommend to use the python mode unless the users on the deployment
 are trustworthy and/or the deployment doesn't deal with sensitive data.
 
-In order to enable python execution you need to import the `PythonCoreExecutor` plugin.
+In order to enable python execution you need to import the `PyCoreExecutor` plugin.
 
 ```
-webgme import plugin PythonCoreExecutor webgme-icore
+webgme import plugin PyCoreExecutor webgme-icore
 ```
 
 and `config.plugin.allowServerExecution = true;` must be added in the config.
