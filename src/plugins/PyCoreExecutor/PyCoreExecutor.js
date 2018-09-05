@@ -11,12 +11,14 @@ define([
     'q',
     'plugin/PluginConfig',
     'text!./metadata.json',
-    'plugin/PluginBase'
+    'plugin/PluginBase',
+    'module'
 ], function (
     Q,
     PluginConfig,
     pluginMetadata,
-    PluginBase) {
+    PluginBase,
+    module) {
     'use strict';
 
     pluginMetadata = JSON.parse(pluginMetadata);
@@ -25,7 +27,8 @@ define([
     const MAX_RUN_TIME = 5000;
     const START_PORT = 5555;
     const COMMAND = 'python3';
-    const SCRIPT_FILE = 'src/plugins/PyCoreExecutor/run_plugin.py';
+    const path = require('path');
+    const SCRIPT_FILE = path.join(path.dirname(module.uri), 'run_plugin.py');
 
     /**
      * Initializes a new instance of PythonBindings.
