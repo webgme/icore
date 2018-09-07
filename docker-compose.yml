@@ -15,9 +15,11 @@ services:
     - mongo
     environment:
     - NODE_ENV=docker
-    - MONGO_IP=mongo
     volumes:
     - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - database
+      - server
     ports:
     # Change the LHS to map to other port on host
     - 8888:8888
@@ -25,13 +27,16 @@ services:
     image: mongo:3.4.1
     ports:
     - 27017:27017 # Uncomment to expose mongo-port on host
+    networks:
+    - database
   py-core-executor:
     build:
       context: .
       dockerfile: DockerfilePyCoreExecutor
     depends_on:
     - webgme-server
+    networks:
+    - server
     environment:
     - NODE_ENV=docker
-    - WEBGME_IP=webgme-server
     command: ["cat", "/dev/null"] # A no-op command so the image is built.
