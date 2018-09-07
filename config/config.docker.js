@@ -14,7 +14,8 @@ config.server.workerManager.options = {
     maxRunningContainers: 10,
     createParams: {
         HostConfig: {
-            Memory: 536870912
+            Memory: 536870912,
+            NetworkMode: 'icore_frontend'
         }
     }
 };
