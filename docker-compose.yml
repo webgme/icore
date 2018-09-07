@@ -7,6 +7,11 @@
 # To stop containers:
 #  $ docker-compose stop
 version: '3'
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
 services:
   webgme-server:
     build:
@@ -15,23 +20,28 @@ services:
     - mongo
     environment:
     - NODE_ENV=docker
-    - MONGO_IP=mongo
     volumes:
     - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - backend
+      - frontend
     ports:
     # Change the LHS to map to other port on host
-    - 8888:8888
+    - 8880:8888
   mongo:
     image: mongo:3.4.1
     ports:
     - 27017:27017 # Uncomment to expose mongo-port on host
+    networks:
+    - backend
   py-core-executor:
     build:
       context: .
       dockerfile: DockerfilePyCoreExecutor
     depends_on:
     - webgme-server
+    networks:
+    - frontend
     environment:
     - NODE_ENV=docker
-    - WEBGME_IP=webgme-server
     command: ["cat", "/dev/null"] # A no-op command so the image is built.
