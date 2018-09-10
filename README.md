@@ -48,6 +48,8 @@ See `./docker-compose.yml` for useful commands and details.
 
 ```docker-compose up -d```
 
+Visit `localhost:8888` from your browser.
+
 Notes:
  - The database-files will be persisted inside the container and the blob-files inside the webgme-server container.
  - The webgme-server launches "docker-workers" on the host machine.

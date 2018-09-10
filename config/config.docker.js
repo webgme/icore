@@ -15,7 +15,7 @@ config.server.workerManager.options = {
     createParams: {
         HostConfig: {
             Memory: 536870912,
-            NetworkMode: 'icore_frontend'
+            NetworkMode: 'icore_workers'
         }
     }
 };
