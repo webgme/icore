@@ -26,7 +26,7 @@ define([
             progress = 15,
             note;
 
-        context.pluginConfig = {script: this._controller._widget.getCode()};
+        context.pluginConfig = {script: this._controller._widget.getCode(), additionalModules:this._controller._collectPythonModules()};
         note = $.notify({
                 message: 'Python code running on server  ...',
                 icon: 'glyphicon glyphicon-cog',

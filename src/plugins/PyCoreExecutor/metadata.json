@@ -19,6 +19,14 @@
       "value": "",
       "valueType": "string",
       "readOnly": false
+    },
+    {
+      "name": "additionalModules",
+      "displayName": "Additional modules",
+      "description": "Comma separated list of modules to be imported to the execution of the script",
+      "value": "",
+      "valueType": "string",
+      "readOnly": false
     }
   ]
 }

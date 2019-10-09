@@ -3,6 +3,7 @@ This is where the implementation of the plugin code goes.
 The PyCoreExecutor-class is imported from both run_plugin.py and run_debug.py
 """
 import sys
+import importlib
 from webgme_bindings import PluginBase
 
 is_python_3 = sys.version_info > (3, 0)
@@ -32,6 +33,11 @@ class PyCoreExecutor(PluginBase):
         core = self.core
         config = self.get_current_config()
         scope = {'PluginBase': PluginBase}
+        additionalModules = config.additionalmodules.split(',')
+        modules = {}
+
+        for module in additionalModules:
+            modules[modules] = importlib.import_module(module);
 
         if is_python_3:
             exec(config['script'], scope);
