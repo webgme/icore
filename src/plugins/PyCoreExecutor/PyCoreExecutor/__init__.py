@@ -33,14 +33,14 @@ class PyCoreExecutor(PluginBase):
         core = self.core
         config = self.get_current_config()
         scope = {'PluginBase': PluginBase}
-        additionalModules = config['additionalModules'].split(',')
+        additional_modules = config['additionalModules'].split(',')
         modules = {}
 
-        for module in additionalModules:
-            modules[modules] = importlib.import_module(module);
+        for module in additional_modules:
+            modules[module] = importlib.import_module(module)
 
         if is_python_3:
-            exec(config['script'], scope);
+            exec(config['script'], scope)
         else:
             exec(config['script'])
             scope['PythonPlugin'] = PythonPlugin
@@ -48,4 +48,4 @@ class PyCoreExecutor(PluginBase):
         plugin = scope['PythonPlugin'](self._webgme, self.commit_hash, self.branch_name, core.get_path(self.active_node), active_selection, self.namespace)
         NotificationLogger(plugin)
 
-        plugin.main();
+        plugin.main()
