@@ -33,11 +33,17 @@ class PyCoreExecutor(PluginBase):
         core = self.core
         config = self.get_current_config()
         scope = {'PluginBase': PluginBase}
-        additional_modules = config['additionalModules'].split(',')
+        if len(config['additionalModules']) > 0:
+            additional_modules = []
+        else:
+            additional_modules = config['additionalModules'].split(',')
+        
         modules = {}
 
         for module in additional_modules:
             modules[module] = importlib.import_module(module)
+        
+        plugin.modules = modules
 
         if is_python_3:
             exec(config['script'], scope)
