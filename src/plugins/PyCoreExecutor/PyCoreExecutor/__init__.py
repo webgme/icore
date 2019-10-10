@@ -33,7 +33,7 @@ class PyCoreExecutor(PluginBase):
         core = self.core
         config = self.get_current_config()
         scope = {'PluginBase': PluginBase}
-        additionalModules = config.additionalmodules.split(',')
+        additionalModules = config.additionalModules.split(',')
         modules = {}
 
         for module in additionalModules:

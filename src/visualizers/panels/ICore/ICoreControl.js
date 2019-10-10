@@ -433,9 +433,9 @@ define([
                             self._language = lang;
                             if(self._availablePythonModules.length > 0){
                                 if(lang === 'python'){
-                                    this.$btnSetModules.enabled(true);
+                                    self.$btnSetModules.enabled(true);
                                 } else {
-                                    this.$btnSetModules.enabled(false);
+                                    self.$btnSetModules.enabled(false);
                                 }
                             }
                             self._onLoad(self._currentNodeId);
