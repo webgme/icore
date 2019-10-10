@@ -34,7 +34,7 @@ class PyCoreExecutor(PluginBase):
         config = self.get_current_config()
         scope = {'PluginBase': PluginBase}
         self._send({'severity':'error','message':config['additionalModules']})
-        self._send({'severity':'error','message':len(config['additionalModules']))
+        self._send({'severity':'error','message':len(config['additionalModules'])})
         if len(config['additionalModules']) > 0:
             additional_modules = []
         else:
