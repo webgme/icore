@@ -34,9 +34,9 @@ class PyCoreExecutor(PluginBase):
         config = self.get_current_config()
         scope = {'PluginBase': PluginBase}
         if len(config['additionalModules']) > 0:
-            additional_modules = []
-        else:
             additional_modules = config['additionalModules'].split(',')
+        else:
+            additional_modules = []
         
         modules = {}
 
