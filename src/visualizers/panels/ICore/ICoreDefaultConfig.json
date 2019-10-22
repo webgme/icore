@@ -80,5 +80,7 @@
     "language": "javascript"
   },
   "availablePythonModules": [],
+  "maxRunTime": 5,
+  "python": "3",
   "defaultPluginId": ""
 }

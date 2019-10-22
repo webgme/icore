@@ -77,20 +77,27 @@ define([
         this._widget.saveCode = function () {
             var node,
                 editorCode,
+                oldModules,
+                modules,
                 attributeName = self._config.codeEditor
                     .scriptCodeAttribute[self._language || 'javascript'];
 
             if (typeof self._currentNodeId === 'string' && self._isEditable === true) {
                 node = self._client.getNode(self._currentNodeId);
                 editorCode = self._widget.getCode();
-
-                if (node && node.getOwnAttribute(attributeName) !== editorCode) {
-                    self._client.setAttribute(
-                        self._currentNodeId,
-                        attributeName,
-                        editorCode,
-                        'ICoreControl updated [' + self._currentNodeId + '] attribute' +
+                if(node){
+                    oldModules = node.getOwnRegistry('icore-python-modules') || '';
+                    modules = self._collectPythonModules();
+                    if(node.getOwnAttribute(attributeName) !== editorCode || oldModules != modules){
+                        self._client.startTransaction();
+                        self._client.setAttribute(
+                            self._currentNodeId,
+                            attributeName,
+                            editorCode);
+                        self._client.setRegistry(self._currentNodeId,'icore-python-modules',self._collectPythonModules());
+                        self._client.completeTransaction('ICoreControl updated [' + self._currentNodeId + '] attribute' +
                         attributeName + ' with new value.');
+                    }
                 }
             }
 
@@ -195,6 +202,7 @@ define([
                 name: node.getAttribute('name'),
                 scriptCode: node.getAttribute(attributeName),
                 editable: node.isReadOnly() === false,
+                pythonModules: node.getRegistry('icore-python-modules') || '',
                 hasScriptAttribute: true,
                 attributeName: attributeName,
                 language: this._language
@@ -247,6 +255,7 @@ define([
 
     ICoreControl.prototype._onLoad = function (gmeId) {
         var description = this._getObjectDescriptor(gmeId);
+        this._setPythonModuleSelection(description.pythonModules);
         if (description.hasScriptAttribute === false) {
             this._client.notifyUser({
                 severity: 'warn',
@@ -272,6 +281,7 @@ define([
     ICoreControl.prototype._onUpdate = function (gmeId) {
         var description = this._getObjectDescriptor(gmeId);
         this._setEditable(description.editable);
+        this._setPythonModuleSelection(description.pythonModules);
         this._widget.updateNode(description);
     };
 
@@ -321,6 +331,19 @@ define([
         return modules;
     };
 
+    ICoreControl.prototype._setPythonModuleSelection = function (moduleList) {
+        const self = this;
+        const modules = moduleList.length > 0 ? moduleList.split(',') : [];
+
+        modules.forEach(function(module){
+            if(self._checkBoxesForPythonModules && self._checkBoxesForPythonModules.hasOwnProperty(module)){
+                self._checkBoxesForPythonModules[module].setChecked(true);
+            }
+        });
+        if(self.$btnSave){
+            self._widget.setUnsavedChanges(false);
+        }
+    }
     /* * * * * * * * Visualizer life cycle callbacks * * * * * * * */
     ICoreControl.prototype.destroy = function () {
         this._detachClientEventListeners();
@@ -450,14 +473,24 @@ define([
         if(this._availablePythonModules.length > 0){
             this.$btnSetModules = toolBar.addDropDownButton({
                 title: 'Additional Python modules',
-                icon: 'glyphicon glyphicon-gift'
+                icon: 'glyphicon glyphicon-gift',
+                menuClass: 'icore-widget-toolbar',
             });
             this._checkBoxesForPythonModules = {};
             this._availablePythonModules.forEach(function (module){
-                self._checkBoxesForPythonModules[module] = self.$btnSetModules.addCheckBox({text:module});
+                self._checkBoxesForPythonModules[module] = self.$btnSetModules.addCheckBox({
+                    text:module,
+                    checkChangedFn:function(){
+                        if(self.$btnSave){
+                            self._widget.setUnsavedChanges(true);
+                        }
+                    }
+                });
                 self._checkBoxesForPythonModules[module].setChecked(false);
-                console.log(self._checkBoxesForPythonModules[module]);
             });
+            if(self.$btnSave){
+                self._widget.setUnsavedChanges(false);
+            }
             this._toolbarItems.push(this.$btnSetModules);
             if(this._language !== 'python'){
                 this.$btnSetModules.enabled(false);

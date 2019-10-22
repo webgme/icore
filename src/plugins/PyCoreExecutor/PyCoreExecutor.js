@@ -67,7 +67,7 @@ define([
         const CoreZMQ = require('webgme-bindings').CoreZMQ;
         const cp = require('child_process');
         const logger = this.logger;
-
+        const config = this.getCurrentConfig();
         let timeoutId;
 
         const callScript = (program, scriptPath, port) => {
@@ -87,8 +87,8 @@ define([
 
             timeoutId = setTimeout(() => {
                 childProc.kill('SIGTERM');
-                deferred.reject(new Error(`Python plugin did not finish within ${MAX_RUN_TIME} ms.`));
-            }, MAX_RUN_TIME);
+                deferred.reject(new Error(`Python plugin did not finish within ${config.maxRunTime*1000} ms.`));
+            }, config.maxRunTime*1000);
 
             childProc.stdout.on('data', data => {
                 // logger.info(data.toString());
@@ -122,8 +122,9 @@ define([
         corezmq.startServer()
             .then((port) => {
                 logger.info(`zmq-server listening at port ${port}`);
+                const command = config.python === "2" ? "python" : "python3"
 
-                return callScript(COMMAND, SCRIPT_FILE, port);
+                return callScript(command, SCRIPT_FILE, port);
             })
             .then(() => {
                 clearTimeout(timeoutId);
