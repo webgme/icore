@@ -479,7 +479,7 @@ define([
             this._checkBoxesForPythonModules = {};
             this._availablePythonModules.forEach(function (module){
                 self._checkBoxesForPythonModules[module] = self.$btnSetModules.addCheckBox({
-                    text:module,
+                    text:module + '  ',
                     checkChangedFn:function(){
                         if(self.$btnSave){
                             self._widget.setUnsavedChanges(true);
