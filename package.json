@@ -38,11 +38,11 @@
     "jshint": "^2.9.4",
     "mocha": "^2.2.5",
     "rimraf": "^2.4.0",
-    "chai": "^3.0.0",
-    "webgme": "^2.30.0"
+    "chai": "^3.0.0"
   },
   "dependencies": {
-    "webgme-bindings": "^1.0.0",
+    "webgme": "https://github.com/webgme/webgme#master",
+    "webgme-bindings": "^1.0.1",
     "webgme-docker-worker-manager": "^0.3.1"
   }
 }

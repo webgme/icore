@@ -19,6 +19,33 @@
       "value": "",
       "valueType": "string",
       "readOnly": false
+    },
+    {
+      "name": "additionalModules",
+      "displayName": "Additional modules",
+      "description": "Comma separated list of modules to be imported to the execution of the script",
+      "value": "",
+      "valueType": "string",
+      "readOnly": false
+    },
+    {
+      "name": "maxRunTime",
+      "displayName": "Maximum allowed run time",
+      "description": "Time in seconds how long the python script execution is allowed to run",
+      "value": 5,
+      "valueType": "integer",
+      "readOnly": false
+    },
+    {
+      "name": "python",
+      "displayName": "Python main version",
+      "description": "Select the main version of python to run",
+      "value": "3",
+      "valueType": "string",
+      "valueItems": [
+        "3",
+        "2"
+      ]
     }
   ]
 }

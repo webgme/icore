@@ -1,6 +1,9 @@
 /**
  * This file is for any scss that you may want for this visualizer.
  */
+ .icore-widget-toolbar {
+  width: max-content;
+}
 
 .icore-widget {
   outline: none;
